@@ -59,7 +59,10 @@ export default function ConnectionsGame() {
 
   const initializeGame = () => {
     const allWords: Word[] = [];
-    GAME_DATA.forEach((category) => {
+    const saved = localStorage.getItem("linkup-game-data");
+    const gameData = saved ? JSON.parse(saved) : GAME_DATA;
+    
+    gameData.forEach((category: Category) => {
       category.words.forEach((word) => {
         allWords.push({
           id: `${category.name}-${word}`,
@@ -96,7 +99,9 @@ export default function ConnectionsGame() {
     const categories = [...new Set(selectedWordObjects.map((w) => w.category))];
 
     if (categories.length === 1) {
-      const category = GAME_DATA.find((c) => c.name === categories[0]);
+      const saved = localStorage.getItem("linkup-game-data");
+      const gameData = saved ? JSON.parse(saved) : GAME_DATA;
+      const category = gameData.find((c: Category) => c.name === categories[0]);
       if (category) {
         setSolvedCategories([...solvedCategories, category]);
         setWords(words.filter((w) => !selectedWords.includes(w.id)));
@@ -126,7 +131,7 @@ export default function ConnectionsGame() {
       <div className="w-full max-w-2xl space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Connections</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Link Up Bangalore</h1>
           <p className="text-muted-foreground">
             Create four groups of four!
           </p>
