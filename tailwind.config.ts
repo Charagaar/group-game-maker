@@ -47,6 +47,21 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        category: {
+          easy: "hsl(var(--category-easy))",
+          "easy-foreground": "hsl(var(--category-easy-foreground))",
+          medium: "hsl(var(--category-medium))",
+          "medium-foreground": "hsl(var(--category-medium-foreground))",
+          hard: "hsl(var(--category-hard))",
+          "hard-foreground": "hsl(var(--category-hard-foreground))",
+          expert: "hsl(var(--category-expert))",
+          "expert-foreground": "hsl(var(--category-expert-foreground))",
+        },
+        selected: {
+          DEFAULT: "hsl(var(--selected))",
+          foreground: "hsl(var(--selected-foreground))",
+        },
+        hover: "hsl(var(--hover))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
