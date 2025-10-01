@@ -18,24 +18,24 @@ interface Category {
 
 const GAME_DATA: Category[] = [
   {
-    name: "Types of Bread",
+    name: "Things you find in a park",
     difficulty: "easy",
-    words: ["SOURDOUGH", "BAGUETTE", "CIABATTA", "RYE"],
+    words: ["GAZEBO", "PATHWAYS", "PLAYGROUND", "GYM"],
   },
   {
-    name: "Programming Languages",
+    name: "Bangalore Bookstores",
     difficulty: "medium",
-    words: ["PYTHON", "JAVA", "RUBY", "SWIFT"],
+    words: ["BLOSSOMS", "SELECT", "SAPNA", "HIGGINBOTHAMS"],
   },
   {
-    name: "Words Before 'Board'",
+    name: "Lakes that have been reclaimed",
     difficulty: "hard",
-    words: ["SURF", "KEY", "DASH", "CLIP"],
+    words: ["SHOOLAY", "HENNUR", "DHARMAMBUDHI", "MILLER"],
   },
   {
-    name: "Contains 'CAT'",
+    name: "Jungle________",
     difficulty: "expert",
-    words: ["SCATTER", "VACATION", "CATALOG", "EDUCATE"],
+    words: ["MYNA", "CROW", "PRINIA", "BABBLER"],
   },
 ];
 
