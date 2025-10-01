@@ -233,8 +233,9 @@ export default function ConnectionsGame() {
                 onClick={submitGuess}
                 disabled={selectedWords.length !== 4}
                 size="lg"
+                className="disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Submit
+                Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
               </Button>
             </div>
           </div>
