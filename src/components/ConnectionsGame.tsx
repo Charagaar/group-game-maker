@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle } from "lucide-react";
+import { Shuffle, Heart } from "lucide-react";
 import { toast } from "sonner";
 
 interface Word {
@@ -197,24 +197,19 @@ export default function ConnectionsGame() {
         {/* Game Controls */}
         {!gameWon && words.length > 0 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-center gap-2 text-sm">
-              <span className="text-muted-foreground">
-                Mistakes remaining:
-              </span>
-              <div className="flex gap-1">
-                {[...Array(remainingAttempts)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-3 h-3 rounded-full bg-foreground"
-                  />
-                ))}
-                {[...Array(mistakes)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-3 h-3 rounded-full bg-muted"
-                  />
-                ))}
-              </div>
+            <div className="flex items-center justify-center gap-1">
+              {[...Array(remainingAttempts)].map((_, i) => (
+                <Heart
+                  key={`filled-${i}`}
+                  className="w-6 h-6 fill-destructive text-destructive"
+                />
+              ))}
+              {[...Array(mistakes)].map((_, i) => (
+                <Heart
+                  key={`empty-${i}`}
+                  className="w-6 h-6 text-muted"
+                />
+              ))}
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
