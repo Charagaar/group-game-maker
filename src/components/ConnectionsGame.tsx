@@ -157,7 +157,7 @@ export default function ConnectionsGame() {
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">Unmap</h1>
           <p className="text-muted-foreground">
-            Create four groups of four!
+            Make four groups of four words!
           </p>
         </div>
 
@@ -253,6 +253,14 @@ export default function ConnectionsGame() {
                 Shuffle
               </Button>
               <Button
+                onClick={submitGuess}
+                disabled={selectedWords.length !== 4}
+                size="lg"
+                className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
+              </Button>
+              <Button
                 variant="outline"
                 onClick={deselectAll}
                 disabled={selectedWords.length === 0}
@@ -260,14 +268,6 @@ export default function ConnectionsGame() {
                 className="w-full sm:w-auto"
               >
                 Deselect All
-              </Button>
-              <Button
-                onClick={submitGuess}
-                disabled={selectedWords.length !== 4}
-                size="lg"
-                className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
               </Button>
             </div>
           </div>
