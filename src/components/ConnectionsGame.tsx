@@ -106,7 +106,7 @@ export default function ConnectionsGame() {
         setSolvedCategories([...solvedCategories, category]);
         setWords(words.filter((w) => !selectedWords.includes(w.id)));
         setSelectedWords([]);
-        toast.success("Correct! Well done!");
+        toast.success("Yay!");
 
         if (solvedCategories.length === 3) {
           setGameWon(true);
@@ -116,7 +116,7 @@ export default function ConnectionsGame() {
     } else {
       setMistakes(mistakes + 1);
       setSelectedWords([]);
-      toast.error("Not quite right. Try again!");
+      toast.error("Try again");
       
       if (mistakes >= 3) {
         toast.error("Game Over! You've used all your attempts.");
@@ -131,7 +131,7 @@ export default function ConnectionsGame() {
       <div className="w-full max-w-2xl space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Link Up Bangalore</h1>
+          <h1 className="text-4xl font-bold tracking-tight">Unmap</h1>
           <p className="text-muted-foreground">
             Create four groups of four!
           </p>
@@ -159,9 +159,9 @@ export default function ConnectionsGame() {
         {/* Game Won Message */}
         {gameWon && (
           <div className="text-center space-y-4 p-8 bg-card rounded-lg border">
-            <h2 className="text-3xl font-bold">Perfect! 🎉</h2>
+            <h2 className="text-3xl font-bold">Lesgooooo!! 🎉</h2>
             <p className="text-muted-foreground">
-              You found all four connections!
+              You found all four groups!
             </p>
             <Button onClick={initializeGame}>Play Again</Button>
           </div>
@@ -169,7 +169,7 @@ export default function ConnectionsGame() {
 
         {/* Word Grid */}
         {!gameWon && words.length > 0 && (
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {words.map((word) => {
               const isSelected = selectedWords.includes(word.id);
               return (
@@ -217,11 +217,12 @@ export default function ConnectionsGame() {
               </div>
             </div>
 
-            <div className="flex gap-2 justify-center">
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button
                 variant="outline"
                 onClick={() => shuffleWords()}
                 size="lg"
+                className="w-full sm:w-auto"
               >
                 <Shuffle className="mr-2 h-4 w-4" />
                 Shuffle
@@ -231,6 +232,7 @@ export default function ConnectionsGame() {
                 onClick={deselectAll}
                 disabled={selectedWords.length === 0}
                 size="lg"
+                className="w-full sm:w-auto"
               >
                 Deselect All
               </Button>
@@ -238,7 +240,7 @@ export default function ConnectionsGame() {
                 onClick={submitGuess}
                 disabled={selectedWords.length !== 4}
                 size="lg"
-                className="disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
               </Button>

@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Trash2, Plus } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Category {
   name: string;
@@ -36,18 +37,40 @@ const DEFAULT_GAME_DATA: Category[] = [
 ];
 
 export default function Admin() {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>(DEFAULT_GAME_DATA);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("linkup-game-data");
-    if (saved) {
-      try {
-        setCategories(JSON.parse(saved));
-      } catch (e) {
-        console.error("Failed to load saved data:", e);
-      }
+    const authStatus = sessionStorage.getItem("admin-authenticated");
+    if (authStatus === "true") {
+      setIsAuthenticated(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      const saved = localStorage.getItem("linkup-game-data");
+      if (saved) {
+        try {
+          setCategories(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to load saved data:", e);
+        }
+      }
+    }
+  }, [isAuthenticated]);
+
+  const handleLogin = () => {
+    if (password === "unmap2025") {
+      setIsAuthenticated(true);
+      sessionStorage.setItem("admin-authenticated", "true");
+      toast.success("Access granted!");
+    } else {
+      toast.error("Incorrect password");
+    }
+  };
 
   const saveData = () => {
     localStorage.setItem("linkup-game-data", JSON.stringify(categories));
@@ -66,19 +89,52 @@ export default function Admin() {
     setCategories(updated);
   };
 
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Admin Access</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                placeholder="Enter admin password"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleLogin} className="flex-1">
+                Login
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/")} className="flex-1">
+                Back to Game
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen p-8 bg-background">
+    <div className="min-h-screen p-4 sm:p-8 bg-background">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Link Up Bangalore - Admin</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Unmap - Admin</h1>
             <p className="text-muted-foreground">Edit your game categories and words</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => window.location.href = "/"}>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={() => navigate("/")} className="w-full sm:w-auto">
               Back to Game
             </Button>
-            <Button onClick={saveData}>Save Changes</Button>
+            <Button onClick={saveData} className="w-full sm:w-auto">Save Changes</Button>
           </div>
         </div>
 
@@ -119,9 +175,9 @@ export default function Admin() {
                     </select>
                   </div>
 
-                  <div>
-                    <Label>Words (4 required)</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-2">
+                   <div>
+                     <Label>Words (4 required)</Label>
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
                       {category.words.map((word, wordIndex) => (
                         <Input
                           key={wordIndex}
