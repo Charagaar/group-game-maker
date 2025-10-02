@@ -159,7 +159,7 @@ export default function Admin() {
                   </div>
 
                   <div>
-                    <Label htmlFor={`difficulty-${categoryIndex}`}>Difficulty</Label>
+                    <Label htmlFor={`difficulty-${categoryIndex}`}>Difficulty Level</Label>
                     <select
                       id={`difficulty-${categoryIndex}`}
                       value={category.difficulty}
@@ -168,11 +168,27 @@ export default function Admin() {
                       }
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
-                      <option value="easy">Easy (Pink)</option>
-                      <option value="medium">Medium (Aqua)</option>
-                      <option value="hard">Hard (Yellow)</option>
-                      <option value="expert">Expert (Orange)</option>
+                      <option value="easy">1. Easy - Pastel Pink</option>
+                      <option value="medium">2. Medium - Pearl Aqua</option>
+                      <option value="hard">3. Hard - Pastel Yellow</option>
+                      <option value="expert">4. Expert - Papaya Orange</option>
                     </select>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">Preview:</span>
+                      <div 
+                        className={`px-4 py-2 rounded-lg text-sm font-semibold ${
+                          category.difficulty === 'easy' ? 'bg-category-easy text-category-easy-foreground' :
+                          category.difficulty === 'medium' ? 'bg-category-medium text-category-medium-foreground' :
+                          category.difficulty === 'hard' ? 'bg-category-hard text-category-hard-foreground' :
+                          'bg-category-expert text-category-expert-foreground'
+                        }`}
+                      >
+                        {category.difficulty === 'easy' ? '1. Easy - Pastel Pink' :
+                         category.difficulty === 'medium' ? '2. Medium - Pearl Aqua' :
+                         category.difficulty === 'hard' ? '3. Hard - Pastel Yellow' :
+                         '4. Expert - Papaya Orange'}
+                      </div>
+                    </div>
                   </div>
 
                    <div>
