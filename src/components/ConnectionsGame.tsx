@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle, Heart } from "lucide-react";
+import { Shuffle, Heart, Share2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Word {
@@ -124,6 +124,30 @@ export default function ConnectionsGame() {
     }
   };
 
+  const shareGame = async () => {
+    const url = window.location.href;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Unmap',
+          text: 'Check out this fun word puzzle game!',
+          url: url,
+        });
+      } catch (err) {
+        // User cancelled share or error occurred
+      }
+    } else {
+      // Fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(url);
+        toast.success("Link copied to clipboard!");
+      } catch (err) {
+        toast.error("Failed to copy link");
+      }
+    }
+  };
+
   const remainingAttempts = 4 - mistakes;
 
   return (
@@ -163,7 +187,13 @@ export default function ConnectionsGame() {
             <p className="text-muted-foreground">
               You found all four groups!
             </p>
-            <Button onClick={initializeGame}>Play Again</Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button onClick={initializeGame}>Play Again</Button>
+              <Button onClick={shareGame} variant="outline">
+                <Share2 className="mr-2 h-4 w-4" />
+                Share with Friends
+              </Button>
+            </div>
           </div>
         )}
 
