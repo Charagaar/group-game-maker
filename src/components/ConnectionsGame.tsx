@@ -151,28 +151,28 @@ export default function ConnectionsGame() {
   const remainingAttempts = 4 - mistakes;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 bg-background">
-      <div className="w-full max-w-2xl space-y-3 sm:space-y-6">
+    <div className="flex flex-col items-center justify-center min-h-screen p-1 sm:p-4 bg-background">
+      <div className="w-full max-w-2xl space-y-2 sm:space-y-6">
         {/* Header */}
-        <div className="text-center space-y-1 sm:space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Unmap</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
+        <div className="text-center space-y-0.5 sm:space-y-2">
+          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">Unmap</h1>
+          <p className="text-xs sm:text-base text-muted-foreground">
             Make four groups of four words!
           </p>
         </div>
 
         {/* Solved Categories */}
         {solvedCategories.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-1 sm:space-y-2">
             {solvedCategories.map((category) => (
               <div
                 key={category.name}
-                className={`p-4 rounded-lg ${difficultyColors[category.difficulty]} transition-all`}
+                className={`p-2 sm:p-4 rounded-lg ${difficultyColors[category.difficulty]} transition-all`}
               >
-                <h3 className="font-semibold text-sm uppercase mb-1">
+                <h3 className="font-semibold text-xs sm:text-sm uppercase mb-0.5 sm:mb-1">
                   {category.name}
                 </h3>
-                <p className="text-sm opacity-90">
+                <p className="text-xs sm:text-sm opacity-90">
                   {category.words.join(", ")}
                 </p>
               </div>
@@ -199,7 +199,7 @@ export default function ConnectionsGame() {
 
         {/* Word Grid */}
         {!gameWon && words.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
+          <div className="grid grid-cols-4 gap-1 sm:gap-2">
             {words.map((word) => {
               const isSelected = selectedWords.includes(word.id);
               return (
@@ -207,9 +207,9 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    aspect-square p-2 sm:p-4 rounded-lg font-semibold text-xs sm:text-sm
+                    aspect-square p-1 sm:p-4 rounded-lg font-semibold text-[10px] sm:text-sm
                     transition-all duration-200
-                    flex items-center justify-center text-center
+                    flex items-center justify-center text-center leading-tight
                     ${
                       isSelected
                         ? "bg-selected text-selected-foreground scale-95"
@@ -242,21 +242,21 @@ export default function ConnectionsGame() {
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 justify-center">
               <Button
                 variant="outline"
                 onClick={() => shuffleWords()}
-                size="lg"
-                className="w-full sm:w-auto"
+                size="sm"
+                className="w-full sm:w-auto text-xs sm:text-sm"
               >
-                <Shuffle className="mr-2 h-4 w-4" />
+                <Shuffle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 Shuffle
               </Button>
               <Button
                 onClick={submitGuess}
                 disabled={selectedWords.length !== 4}
-                size="lg"
-                className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                size="sm"
+                className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
               >
                 Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
               </Button>
@@ -264,8 +264,8 @@ export default function ConnectionsGame() {
                 variant="outline"
                 onClick={deselectAll}
                 disabled={selectedWords.length === 0}
-                size="lg"
-                className="w-full sm:w-auto"
+                size="sm"
+                className="w-full sm:w-auto text-xs sm:text-sm"
               >
                 Deselect All
               </Button>
