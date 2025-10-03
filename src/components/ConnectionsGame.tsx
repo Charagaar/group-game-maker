@@ -151,12 +151,12 @@ export default function ConnectionsGame() {
   const remainingAttempts = 4 - mistakes;
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-background">
-      <div className="w-full max-w-2xl space-y-6">
+    <div className="flex flex-col items-center justify-center min-h-screen p-2 sm:p-4 bg-background">
+      <div className="w-full max-w-2xl space-y-3 sm:space-y-6">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">Unmap</h1>
-          <p className="text-muted-foreground">
+        <div className="text-center space-y-1 sm:space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Unmap</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Make four groups of four words!
           </p>
         </div>
@@ -199,7 +199,7 @@ export default function ConnectionsGame() {
 
         {/* Word Grid */}
         {!gameWon && words.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-2">
             {words.map((word) => {
               const isSelected = selectedWords.includes(word.id);
               return (
@@ -207,7 +207,7 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    aspect-square p-4 rounded-lg font-semibold text-sm
+                    aspect-square p-2 sm:p-4 rounded-lg font-semibold text-xs sm:text-sm
                     transition-all duration-200
                     flex items-center justify-center text-center
                     ${
@@ -226,18 +226,18 @@ export default function ConnectionsGame() {
 
         {/* Game Controls */}
         {!gameWon && words.length > 0 && (
-          <div className="space-y-4">
+          <div className="space-y-2 sm:space-y-4">
             <div className="flex items-center justify-center gap-1">
               {[...Array(remainingAttempts)].map((_, i) => (
                 <Heart
                   key={`filled-${i}`}
-                  className="w-6 h-6 fill-destructive text-destructive"
+                  className="w-5 h-5 sm:w-6 sm:h-6 fill-destructive text-destructive"
                 />
               ))}
               {[...Array(mistakes)].map((_, i) => (
                 <Heart
                   key={`empty-${i}`}
-                  className="w-6 h-6 text-muted"
+                  className="w-5 h-5 sm:w-6 sm:h-6 text-muted"
                 />
               ))}
             </div>
