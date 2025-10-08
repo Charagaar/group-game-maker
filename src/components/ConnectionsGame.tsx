@@ -55,6 +55,14 @@ export default function ConnectionsGame() {
 
   useEffect(() => {
     initializeGame();
+    
+    // Reload game when returning from admin page
+    const handleFocus = () => {
+      initializeGame();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
   const initializeGame = () => {
