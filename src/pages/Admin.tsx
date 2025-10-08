@@ -4,8 +4,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Trash2, Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { User, Session } from "@supabase/supabase-js";
 
 interface Category {
   name: string;
@@ -13,68 +14,100 @@ interface Category {
   words: string[];
 }
 
-const DEFAULT_GAME_DATA: Category[] = [
-  {
-    name: "Things you find in a park",
-    difficulty: "easy",
-    words: ["GAZEBO", "PATHWAYS", "PLAYGROUND", "GYM"],
-  },
-  {
-    name: "Bangalore Bookstores",
-    difficulty: "medium",
-    words: ["BLOSSOMS", "SELECT", "SAPNA", "HIGGINBOTHAMS"],
-  },
-  {
-    name: "Lakes that have been reclaimed",
-    difficulty: "hard",
-    words: ["SHOOLAY", "HENNUR", "DHARMAMBUDHI", "MILLER"],
-  },
-  {
-    name: "Jungle________",
-    difficulty: "expert",
-    words: ["MYNA", "CROW", "PRINIA", "BABBLER"],
-  },
-];
 
 export default function Admin() {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[]>(DEFAULT_GAME_DATA);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const authStatus = sessionStorage.getItem("admin-authenticated");
-    if (authStatus === "true") {
-      setIsAuthenticated(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      const saved = localStorage.getItem("linkup-game-data");
-      if (saved) {
-        try {
-          setCategories(JSON.parse(saved));
-        } catch (e) {
-          console.error("Failed to load saved data:", e);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (!session?.user) {
+          setTimeout(() => {
+            navigate("/auth");
+          }, 0);
         }
       }
-    }
-  }, [isAuthenticated]);
+    );
 
-  const handleLogin = () => {
-    if (password === "unmap2025") {
-      setIsAuthenticated(true);
-      sessionStorage.setItem("admin-authenticated", "true");
-      toast.success("Access granted!");
-    } else {
-      toast.error("Incorrect password");
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      
+      if (!session?.user) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadCategories();
+    }
+  }, [user]);
+
+  const loadCategories = async () => {
+    const { data, error } = await supabase
+      .from("game_categories")
+      .select("*")
+      .order("display_order");
+
+    if (error) {
+      toast.error("Failed to load categories");
+      return;
+    }
+
+    if (data) {
+      setCategories(data.map(cat => ({
+        name: cat.name,
+        difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
+        words: cat.words
+      })));
     }
   };
 
-  const saveData = () => {
-    localStorage.setItem("linkup-game-data", JSON.stringify(categories));
+  const saveData = async () => {
+    const { error } = await supabase
+      .from("game_categories")
+      .delete()
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+
+    if (error) {
+      toast.error("Failed to clear old data");
+      return;
+    }
+
+    const dataToInsert = categories.map((cat, index) => ({
+      name: cat.name,
+      difficulty: cat.difficulty,
+      words: cat.words,
+      display_order: index + 1
+    }));
+
+    const { error: insertError } = await supabase
+      .from("game_categories")
+      .insert(dataToInsert);
+
+    if (insertError) {
+      toast.error("Failed to save categories");
+      return;
+    }
+
     toast.success("Game data saved!");
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
   };
 
   const updateCategory = (index: number, field: keyof Category, value: any) => {
@@ -89,37 +122,16 @@ export default function Admin() {
     setCategories(updated);
   };
 
-  if (!isAuthenticated) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Admin Access</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                placeholder="Enter admin password"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={handleLogin} className="flex-1">
-                Login
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/")} className="flex-1">
-                Back to Game
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Loading...</p>
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
@@ -135,6 +147,9 @@ export default function Admin() {
               Back to Game
             </Button>
             <Button onClick={saveData} className="w-full sm:w-auto">Save Changes</Button>
+            <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
+              Logout
+            </Button>
           </div>
         </div>
 

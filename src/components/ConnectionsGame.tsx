@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Shuffle, Heart, Share2 } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Word {
   id: string;
@@ -16,28 +17,6 @@ interface Category {
   words: string[];
 }
 
-const GAME_DATA: Category[] = [
-  {
-    name: "Things you find in a park",
-    difficulty: "easy",
-    words: ["GAZEBO", "PATHWAYS", "PLAYGROUND", "GYM"],
-  },
-  {
-    name: "Bangalore Bookstores",
-    difficulty: "medium",
-    words: ["BLOSSOMS", "SELECT", "SAPNA", "HIGGINBOTHAMS"],
-  },
-  {
-    name: "Lakes that have been reclaimed",
-    difficulty: "hard",
-    words: ["SHOOLAY", "HENNUR", "DHARMAMBUDHI", "MILLER"],
-  },
-  {
-    name: "Jungle________",
-    difficulty: "expert",
-    words: ["MYNA", "CROW", "PRINIA", "BABBLER"],
-  },
-];
 
 const difficultyColors = {
   easy: "bg-category-easy text-category-easy-foreground",
@@ -55,28 +34,27 @@ export default function ConnectionsGame() {
 
   useEffect(() => {
     initializeGame();
-    
-    // Reload game when returning from admin page
-    const handleFocus = () => {
-      initializeGame();
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
   }, []);
 
-  const initializeGame = () => {
+  const initializeGame = async () => {
+    const { data, error } = await supabase
+      .from("game_categories")
+      .select("*")
+      .order("display_order");
+
+    if (error) {
+      toast.error("Failed to load game data");
+      return;
+    }
+
     const allWords: Word[] = [];
-    const saved = localStorage.getItem("linkup-game-data");
-    const gameData = saved ? JSON.parse(saved) : GAME_DATA;
-    
-    gameData.forEach((category: Category) => {
-      category.words.forEach((word) => {
+    data.forEach((category) => {
+      category.words.forEach((word: string) => {
         allWords.push({
           id: `${category.name}-${word}`,
           text: word,
           category: category.name,
-          difficulty: category.difficulty,
+          difficulty: category.difficulty as "easy" | "medium" | "hard" | "expert",
         });
       });
     });
@@ -100,17 +78,25 @@ export default function ConnectionsGame() {
     setSelectedWords([]);
   };
 
-  const submitGuess = () => {
+  const submitGuess = async () => {
     if (selectedWords.length !== 4) return;
 
     const selectedWordObjects = words.filter((w) => selectedWords.includes(w.id));
     const categories = [...new Set(selectedWordObjects.map((w) => w.category))];
 
     if (categories.length === 1) {
-      const saved = localStorage.getItem("linkup-game-data");
-      const gameData = saved ? JSON.parse(saved) : GAME_DATA;
-      const category = gameData.find((c: Category) => c.name === categories[0]);
-      if (category) {
+      const { data } = await supabase
+        .from("game_categories")
+        .select("*")
+        .eq("name", categories[0])
+        .single();
+
+      if (data) {
+        const category: Category = {
+          name: data.name,
+          difficulty: data.difficulty as "easy" | "medium" | "hard" | "expert",
+          words: data.words,
+        };
         setSolvedCategories([...solvedCategories, category]);
         setWords(words.filter((w) => !selectedWords.includes(w.id)));
         setSelectedWords([]);
