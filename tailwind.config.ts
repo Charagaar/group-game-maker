@@ -75,8 +75,11 @@ export default {
       },
       borderRadius: {
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "var(--radius)",
+        sm: "var(--radius)",
+      },
+      fontFamily: {
+        pixel: ['"Press Start 2P"', 'cursive'],
       },
       keyframes: {
         "accordion-down": {
