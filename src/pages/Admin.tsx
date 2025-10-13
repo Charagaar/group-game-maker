@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { User, Session } from "@supabase/supabase-js";
 
 interface Category {
   name: string;
@@ -18,42 +17,20 @@ interface Category {
 export default function Admin() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (!session?.user) {
-          setTimeout(() => {
-            navigate("/auth");
-          }, 0);
-        }
-      }
-    );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      if (!session?.user) {
-        navigate("/auth");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
-
-  useEffect(() => {
-    if (user) {
-      loadCategories();
+    // Check authentication
+    const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
+    
+    if (!isAuthenticated) {
+      navigate("/auth");
+      return;
     }
-  }, [user]);
+
+    loadCategories();
+    setLoading(false);
+  }, [navigate]);
 
   const loadCategories = async () => {
     const { data, error } = await supabase
@@ -105,8 +82,9 @@ export default function Admin() {
     toast.success("Game data saved!");
   };
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    localStorage.removeItem("adminAuthenticated");
+    toast.success("Logged out successfully");
     navigate("/");
   };
 
@@ -128,10 +106,6 @@ export default function Admin() {
         <p>Loading...</p>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (
