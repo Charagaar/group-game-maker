@@ -201,7 +201,7 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    aspect-square p-1 sm:p-2 rounded-lg font-semibold text-[6px] sm:text-[10px]
+                    aspect-square p-1 sm:p-2 rounded-lg font-semibold text-[5px] sm:text-[8px]
                     transition-all duration-200
                     flex items-center justify-center text-center leading-tight
                     break-words hyphens-auto

@@ -8,33 +8,33 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 120 40% 90%;
-    --foreground: 240 10% 15%;
+    --background: 200 60% 85%;
+    --foreground: 240 40% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 15%;
+    --card-foreground: 240 40% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 15%;
+    --popover-foreground: 240 40% 15%;
 
-    --primary: 240 6% 10%;
+    --primary: 220 80% 45%;
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 240 5% 96%;
-    --secondary-foreground: 240 6% 10%;
+    --secondary: 280 70% 55%;
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 240 5% 96%;
-    --muted-foreground: 240 4% 46%;
+    --muted: 240 30% 88%;
+    --muted-foreground: 240 25% 40%;
 
-    --accent: 240 5% 96%;
-    --accent-foreground: 240 6% 10%;
+    --accent: 340 75% 55%;
+    --accent-foreground: 0 0% 98%;
 
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 6% 90%;
-    --input: 240 6% 90%;
-    --ring: 240 6% 10%;
+    --border: 240 30% 80%;
+    --input: 240 30% 85%;
+    --ring: 220 80% 45%;
 
     --radius: 0rem;
 
@@ -127,6 +127,7 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
     font-family: 'Press Start 2P', cursive;
+    font-size: 12px;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
