@@ -201,18 +201,23 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    aspect-square p-1 sm:p-2 rounded-lg font-semibold text-[6px] sm:text-[10px]
+                    aspect-square p-1 sm:p-2 rounded-lg font-semibold text-[5.5px] sm:text-[9px]
                     transition-all duration-200
                     flex items-center justify-center text-center leading-tight
-                    whitespace-nowrap overflow-hidden
+                    break-words overflow-wrap-anywhere
                     ${
                       isSelected
                         ? "bg-selected text-selected-foreground scale-95"
                         : "bg-card hover:bg-hover border border-border"
                     }
                   `}
+                  style={{
+                    wordBreak: 'break-word',
+                    overflowWrap: 'anywhere',
+                    hyphens: 'none'
+                  }}
                 >
-                  <span className="max-w-full px-1 truncate">{word.text}</span>
+                  <span className="max-w-full px-0.5 leading-[1.1]">{word.text}</span>
                 </button>
               );
             })}
