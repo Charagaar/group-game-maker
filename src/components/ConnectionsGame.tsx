@@ -201,9 +201,10 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    aspect-square p-1 sm:p-4 rounded-lg font-semibold text-[10px] sm:text-sm
+                    aspect-square p-1 sm:p-2 rounded-lg font-semibold text-[6px] sm:text-[10px]
                     transition-all duration-200
                     flex items-center justify-center text-center leading-tight
+                    break-words hyphens-auto
                     ${
                       isSelected
                         ? "bg-selected text-selected-foreground scale-95"
@@ -211,7 +212,7 @@ export default function ConnectionsGame() {
                     }
                   `}
                 >
-                  {word.text}
+                  <span className="max-w-full px-0.5">{word.text}</span>
                 </button>
               );
             })}
