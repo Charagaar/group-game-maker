@@ -232,12 +232,14 @@ export default function ConnectionsGame() {
                 <Heart
                   key={`filled-${i}`}
                   className="w-5 h-5 sm:w-6 sm:h-6 fill-destructive text-destructive"
+                  style={{ imageRendering: 'pixelated' }}
                 />
               ))}
               {[...Array(mistakes)].map((_, i) => (
                 <Heart
                   key={`empty-${i}`}
                   className="w-5 h-5 sm:w-6 sm:h-6 text-muted"
+                  style={{ imageRendering: 'pixelated' }}
                 />
               ))}
             </div>
