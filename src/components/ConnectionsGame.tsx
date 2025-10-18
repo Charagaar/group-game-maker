@@ -66,6 +66,14 @@ export default function ConnectionsGame() {
     setWords(shuffled);
   };
 
+  const getFontSize = (text: string) => {
+    const length = text.length;
+    if (length <= 6) return 'text-[7px] sm:text-xs';
+    if (length <= 10) return 'text-[6px] sm:text-[10px]';
+    if (length <= 14) return 'text-[5px] sm:text-[9px]';
+    return 'text-[4.5px] sm:text-[8px]';
+  };
+
   const toggleWord = (wordId: string) => {
     if (selectedWords.includes(wordId)) {
       setSelectedWords(selectedWords.filter((id) => id !== wordId));
@@ -201,7 +209,7 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    aspect-square p-1 sm:p-2 rounded-lg font-semibold text-[5.5px] sm:text-[9px]
+                    aspect-square p-1 sm:p-2 rounded-lg font-semibold ${getFontSize(word.text)}
                     transition-all duration-200
                     flex items-center justify-center text-center leading-tight
                     break-words overflow-wrap-anywhere
