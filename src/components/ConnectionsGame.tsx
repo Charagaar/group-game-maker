@@ -31,6 +31,7 @@ export default function ConnectionsGame() {
   const [solvedCategories, setSolvedCategories] = useState<Category[]>([]);
   const [mistakes, setMistakes] = useState(0);
   const [gameWon, setGameWon] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
     initializeGame();
@@ -59,6 +60,23 @@ export default function ConnectionsGame() {
       });
     });
     shuffleWords(allWords);
+
+    // Track game session
+    const newSessionId = crypto.randomUUID();
+    const { error: sessionError } = await supabase
+      .from("game_sessions")
+      .insert({
+        session_id: newSessionId,
+      });
+
+    if (!sessionError) {
+      setSessionId(newSessionId);
+    }
+
+    // Reset game state
+    setSolvedCategories([]);
+    setMistakes(0);
+    setGameWon(false);
   };
 
   const shuffleWords = (wordsToShuffle: Word[] = words) => {
@@ -113,6 +131,19 @@ export default function ConnectionsGame() {
         if (solvedCategories.length === 3) {
           setGameWon(true);
           toast.success("Congratulations! You won!");
+          
+          // Update session as won
+          if (sessionId) {
+            await supabase
+              .from("game_sessions")
+              .update({
+                completed_at: new Date().toISOString(),
+                game_won: true,
+                lives_lost: mistakes,
+                categories_solved: 4,
+              })
+              .eq("session_id", sessionId);
+          }
         }
       }
     } else {
@@ -122,6 +153,19 @@ export default function ConnectionsGame() {
       
       if (mistakes >= 3) {
         toast.error("Game Over! You've used all your attempts.");
+        
+        // Update session as lost
+        if (sessionId) {
+          await supabase
+            .from("game_sessions")
+            .update({
+              completed_at: new Date().toISOString(),
+              game_won: false,
+              lives_lost: mistakes + 1,
+              categories_solved: solvedCategories.length,
+            })
+            .eq("session_id", sessionId);
+        }
       }
     }
   };

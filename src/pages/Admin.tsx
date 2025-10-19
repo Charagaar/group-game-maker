@@ -120,6 +120,9 @@ export default function Admin() {
             <Button variant="outline" onClick={() => navigate("/")} className="w-full sm:w-auto">
               Back to Game
             </Button>
+            <Button variant="outline" onClick={() => navigate("/statistics")} className="w-full sm:w-auto">
+              Statistics
+            </Button>
             <Button onClick={saveData} className="w-full sm:w-auto">Save Changes</Button>
             <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
               Logout
