@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      game_sessions: {
+        Row: {
+          categories_solved: number | null
+          completed_at: string | null
+          game_won: boolean | null
+          id: string
+          lives_lost: number | null
+          session_id: string
+          started_at: string
+        }
+        Insert: {
+          categories_solved?: number | null
+          completed_at?: string | null
+          game_won?: boolean | null
+          id?: string
+          lives_lost?: number | null
+          session_id: string
+          started_at?: string
+        }
+        Update: {
+          categories_solved?: number | null
+          completed_at?: string | null
+          game_won?: boolean | null
+          id?: string
+          lives_lost?: number | null
+          session_id?: string
+          started_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
