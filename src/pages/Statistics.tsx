@@ -24,7 +24,7 @@ export default function Statistics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem("isAdmin");
+    const isAdmin = localStorage.getItem("adminAuthenticated") === "true";
     if (!isAdmin) {
       navigate("/auth");
       return;
