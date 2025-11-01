@@ -24,13 +24,35 @@ export default function Statistics() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const isAdmin = localStorage.getItem("adminAuthenticated") === "true";
-    if (!isAdmin) {
+    // Check if user is authenticated and has admin role
+    checkAuthAndLoadData();
+  }, [navigate]);
+
+  const checkAuthAndLoadData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
       navigate("/auth");
       return;
     }
+
+    // Check if user has admin role
+    const { data: roles, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !roles) {
+      toast.error("Admin access required");
+      await supabase.auth.signOut();
+      navigate("/auth");
+      return;
+    }
+
     loadStats();
-  }, [navigate]);
+  };
 
   const loadStats = async () => {
     try {

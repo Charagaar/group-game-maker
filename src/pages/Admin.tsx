@@ -20,17 +20,38 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
+    // Check if user is authenticated and has admin role
+    checkAuthAndLoadData();
+  }, [navigate]);
+
+  const checkAuthAndLoadData = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
     
-    if (!isAuthenticated) {
+    if (!session) {
       navigate("/auth");
+      setLoading(false);
       return;
     }
 
-    loadCategories();
+    // Check if user has admin role
+    const { data: roles, error: roleError } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', session.user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    if (roleError || !roles) {
+      toast.error("Admin access required");
+      await supabase.auth.signOut();
+      navigate("/auth");
+      setLoading(false);
+      return;
+    }
+
+    await loadCategories();
     setLoading(false);
-  }, [navigate]);
+  };
 
   const loadCategories = async () => {
     const { data, error } = await supabase
@@ -82,8 +103,8 @@ export default function Admin() {
     toast.success("Game data saved!");
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminAuthenticated");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     toast.success("Logged out successfully");
     navigate("/");
   };
