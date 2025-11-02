@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle, Heart, Share2 } from "lucide-react";
+import { Shuffle, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 
 interface Word {
   id: string;
@@ -17,6 +18,29 @@ interface Category {
   words: string[];
 }
 
+// Fallback game data if database is empty
+const FALLBACK_GAME_DATA: Category[] = [
+  {
+    name: "Things you find in a park",
+    difficulty: "easy",
+    words: ["GAZEBO", "PATHWAYS", "PLAYGROUND", "GYM"],
+  },
+  {
+    name: "Bangalore Bookstores",
+    difficulty: "medium",
+    words: ["BLOSSOMS", "SELECT", "SAPNA", "HIGGINBOTHAMS"],
+  },
+  {
+    name: "Lakes that have been reclaimed",
+    difficulty: "hard",
+    words: ["SHOOLAY", "HENNUR", "DHARMAMBUDHI", "MILLER"],
+  },
+  {
+    name: "Areas in Bangalore named after politicians",
+    difficulty: "expert",
+    words: ["RT NAGAR", "SADASHIVNAGAR", "JP NAGAR", "MG ROAD"],
+  },
+];
 
 const difficultyColors = {
   easy: "bg-category-easy text-category-easy-foreground",
@@ -26,11 +50,13 @@ const difficultyColors = {
 };
 
 export default function ConnectionsGame() {
+  const navigate = useNavigate();
   const [words, setWords] = useState<Word[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [solvedCategories, setSolvedCategories] = useState<Category[]>([]);
   const [mistakes, setMistakes] = useState(0);
   const [gameWon, setGameWon] = useState(false);
+  const [gameLost, setGameLost] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,18 +64,32 @@ export default function ConnectionsGame() {
   }, []);
 
   const initializeGame = async () => {
-    const { data, error } = await supabase
-      .from("game_categories")
-      .select("*")
-      .order("display_order");
+    let gameData: Category[] = FALLBACK_GAME_DATA;
+    
+    try {
+      const { data, error } = await supabase
+        .from("game_categories")
+        .select("*")
+        .order("display_order");
 
-    if (error) {
-      toast.error("Failed to load game data");
-      return;
+      if (error) {
+        console.error("Failed to load game data from database:", error);
+      } else if (data && data.length > 0) {
+        // Convert database format to Category format
+        gameData = data.map(cat => ({
+          name: cat.name,
+          difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
+          words: cat.words,
+        }));
+      } else {
+        console.warn("No game data in database, using fallback");
+      }
+    } catch (err) {
+      console.error("Error loading game data:", err);
     }
 
     const allWords: Word[] = [];
-    data.forEach((category) => {
+    gameData.forEach((category) => {
       category.words.forEach((word: string) => {
         allWords.push({
           id: `${category.name}-${word}`,
@@ -77,6 +117,7 @@ export default function ConnectionsGame() {
     setSolvedCategories([]);
     setMistakes(0);
     setGameWon(false);
+    setGameLost(false);
   };
 
   const shuffleWords = (wordsToShuffle: Word[] = words) => {
@@ -105,25 +146,40 @@ export default function ConnectionsGame() {
   };
 
   const submitGuess = async () => {
+    if (gameLost) return;
     if (selectedWords.length !== 4) return;
 
     const selectedWordObjects = words.filter((w) => selectedWords.includes(w.id));
     const categories = [...new Set(selectedWordObjects.map((w) => w.category))];
 
     if (categories.length === 1) {
-      const { data } = await supabase
+      let categoryData: Category | null = null;
+      
+      // Try to get category from database
+      const { data, error } = await supabase
         .from("game_categories")
         .select("*")
         .eq("name", categories[0])
         .single();
 
       if (data) {
-        const category: Category = {
+        categoryData = {
           name: data.name,
           difficulty: data.difficulty as "easy" | "medium" | "hard" | "expert",
           words: data.words,
         };
-        setSolvedCategories([...solvedCategories, category]);
+      } else if (error || !data) {
+        // Fallback: construct category from selected words
+        const firstWord = selectedWordObjects[0];
+        categoryData = {
+          name: firstWord.category,
+          difficulty: firstWord.difficulty,
+          words: selectedWordObjects.map(w => w.text),
+        };
+      }
+
+      if (categoryData) {
+        setSolvedCategories([...solvedCategories, categoryData]);
         setWords(words.filter((w) => !selectedWords.includes(w.id)));
         setSelectedWords([]);
         toast.success("Yay!");
@@ -144,6 +200,9 @@ export default function ConnectionsGame() {
               })
               .eq("session_id", sessionId);
           }
+          
+          // Navigate to game won page
+          navigate("/game-won");
         }
       }
     } else {
@@ -153,6 +212,7 @@ export default function ConnectionsGame() {
       
       if (mistakes >= 3) {
         toast.error("Game Over! You've used all your attempts.");
+        setGameLost(true);
         
         // Update session as lost
         if (sessionId) {
@@ -166,35 +226,14 @@ export default function ConnectionsGame() {
             })
             .eq("session_id", sessionId);
         }
+        
+        // Navigate to game over page
+        navigate("/game-over");
       }
     }
   };
 
-  const shareGame = async () => {
-    const url = window.location.href;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Unmap',
-          text: 'Check out this fun word puzzle game!',
-          url: url,
-        });
-      } catch (err) {
-        // User cancelled share or error occurred
-      }
-    } else {
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(url);
-        toast.success("Link copied to clipboard!");
-      } catch (err) {
-        toast.error("Failed to copy link");
-      }
-    }
-  };
-
-  const remainingAttempts = 4 - mistakes;
+  const remainingAttempts = Math.max(0, 4 - mistakes);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-1 sm:p-4 bg-background">
@@ -226,25 +265,9 @@ export default function ConnectionsGame() {
           </div>
         )}
 
-        {/* Game Won Message */}
-        {gameWon && (
-          <div className="text-center space-y-4 p-8 bg-card rounded-lg border">
-            <h2 className="text-3xl font-bold">Lesgooooo!! 🎉</h2>
-            <p className="text-muted-foreground">
-              You found all four groups!
-            </p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button onClick={initializeGame}>Play Again</Button>
-              <Button onClick={shareGame} variant="outline">
-                <Share2 className="mr-2 h-4 w-4" />
-                Share with Friends
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Word Grid */}
-        {!gameWon && words.length > 0 && (
+        {words.length > 0 && (
           <div className="grid grid-cols-4 gap-1 sm:gap-2">
             {words.map((word) => {
               const isSelected = selectedWords.includes(word.id);
@@ -277,7 +300,7 @@ export default function ConnectionsGame() {
         )}
 
         {/* Game Controls */}
-        {!gameWon && words.length > 0 && (
+        {words.length > 0 && (
           <div className="space-y-2 sm:space-y-4">
             <div className="flex items-center justify-center gap-1">
               {[...Array(remainingAttempts)].map((_, i) => (
