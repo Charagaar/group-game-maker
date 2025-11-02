@@ -32,15 +32,15 @@ export default function Auth() {
       if (roleError) {
         console.error('Role check error:', roleError);
         toast.error("Error checking admin access");
-        await supabase.auth.signOut();
+        navigate("/");
         return;
       }
       
       if (isAdmin) {
         navigate("/admin");
       } else {
-        toast.error("Admin access required");
-        await supabase.auth.signOut();
+        toast.info("Signed in. Admin access required for admin panel.");
+        navigate("/");
       }
     }
   };
@@ -79,13 +79,13 @@ export default function Auth() {
         if (roleError) {
           console.error('Role check error:', roleError);
           toast.error("Error checking admin access: " + roleError.message);
-          await supabase.auth.signOut();
+          navigate("/");
           return;
         }
 
         if (!isAdmin) {
-          toast.error("Admin access required");
-          await supabase.auth.signOut();
+          toast.info("Logged in, but admin access is required for the admin panel.");
+          navigate("/");
           return;
         }
 

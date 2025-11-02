@@ -100,6 +100,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      grant_admin_by_user_id: { Args: { _user_id: string }; Returns: boolean }
+      grant_admin_to_user: { Args: { _email: string }; Returns: boolean }
       has_any_admin: { Args: never; Returns: boolean }
       has_role: {
         Args: {
