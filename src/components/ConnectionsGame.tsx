@@ -324,27 +324,29 @@ export default function ConnectionsGame() {
                 variant="outline"
                 onClick={() => shuffleWords()}
                 size="sm"
-                className="w-full sm:w-auto text-xs sm:text-sm"
+                className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
               >
-                <Shuffle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                Shuffle
+                <Shuffle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">Shuffle</span>
               </Button>
               <Button
                 onClick={submitGuess}
                 disabled={selectedWords.length !== 4}
                 size="sm"
-                className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm px-2 sm:px-3"
               >
-                Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
+                <span className="truncate">
+                  Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
+                </span>
               </Button>
               <Button
                 variant="outline"
                 onClick={deselectAll}
                 disabled={selectedWords.length === 0}
                 size="sm"
-                className="w-full sm:w-auto text-xs sm:text-sm"
+                className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
               >
-                Deselect All
+                <span className="truncate">Deselect All</span>
               </Button>
             </div>
           </div>

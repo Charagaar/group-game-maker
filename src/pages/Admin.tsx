@@ -138,15 +138,17 @@ export default function Admin() {
             <p className="text-muted-foreground">Edit your game categories and words</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <Button variant="outline" onClick={() => navigate("/")} className="w-full sm:w-auto">
-              Back to Game
+            <Button variant="outline" onClick={() => navigate("/")} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+              <span className="truncate">Back to Game</span>
             </Button>
-            <Button variant="outline" onClick={() => navigate("/statistics")} className="w-full sm:w-auto">
-              Statistics
+            <Button variant="outline" onClick={() => navigate("/statistics")} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+              <span className="truncate">Statistics</span>
             </Button>
-            <Button onClick={saveData} className="w-full sm:w-auto">Save Changes</Button>
-            <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
-              Logout
+            <Button onClick={saveData} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+              <span className="truncate">Save Changes</span>
+            </Button>
+            <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+              <span className="truncate">Logout</span>
             </Button>
           </div>
         </div>

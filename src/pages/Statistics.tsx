@@ -95,9 +95,10 @@ export default function Statistics() {
         <Button
           variant="outline"
           onClick={() => navigate("/admin")}
+          className="text-xs sm:text-sm px-3 sm:px-4"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Admin
+          <ArrowLeft className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+          <span className="truncate">Back to Admin</span>
         </Button>
       </div>
 

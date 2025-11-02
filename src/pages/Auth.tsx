@@ -176,24 +176,26 @@ export default function Auth() {
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full text-xs sm:text-sm px-3 sm:px-4" disabled={loading}>
                 {loading ? "Loading..." : (isSignUp ? "Sign Up" : "Login")}
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="w-full"
+                className="w-full text-xs sm:text-sm px-3 sm:px-4"
               >
-                {isSignUp ? "Already have an account? Login" : "Need an account? Sign Up"}
+                <span className="truncate">
+                  {isSignUp ? "Already have an account? Login" : "Need an account? Sign Up"}
+                </span>
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => navigate("/")}
-                className="w-full"
+                className="w-full text-xs sm:text-sm px-3 sm:px-4"
               >
-                Back to Game
+                <span className="truncate">Back to Game</span>
               </Button>
             </div>
           </form>
