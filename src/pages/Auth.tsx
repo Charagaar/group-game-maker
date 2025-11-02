@@ -22,15 +22,21 @@ export default function Auth() {
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      // Check if user has admin role
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+      // Check if user has admin role using has_role function (bypasses RLS)
+      const { data: isAdmin, error: roleError } = await supabase
+        .rpc('has_role', {
+          _user_id: session.user.id,
+          _role: 'admin'
+        });
       
-      if (roles) {
+      if (roleError) {
+        console.error('Role check error:', roleError);
+        toast.error("Error checking admin access");
+        await supabase.auth.signOut();
+        return;
+      }
+      
+      if (isAdmin) {
         navigate("/admin");
       } else {
         toast.error("Admin access required");
@@ -49,23 +55,37 @@ export default function Auth() {
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Sign in error:', error);
+        // Provide more specific error messages
+        if (error.message.includes('Email not confirmed')) {
+          toast.error("Please check your email and confirm your account before signing in.");
+        } else if (error.message.includes('Invalid login credentials')) {
+          toast.error("Invalid email or password. Please try again.");
+        } else {
+          toast.error(error.message || "Failed to sign in");
+        }
+        return;
+      }
 
       if (data.user) {
-        // Check if user has admin role
-        const { data: roles, error: roleError } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', data.user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
+        // Check if user has admin role using has_role function (bypasses RLS)
+        const { data: isAdmin, error: roleError } = await supabase
+          .rpc('has_role', {
+            _user_id: data.user.id,
+            _role: 'admin'
+          });
 
-        if (roleError) throw roleError;
+        if (roleError) {
+          console.error('Role check error:', roleError);
+          toast.error("Error checking admin access: " + roleError.message);
+          await supabase.auth.signOut();
+          return;
+        }
 
-        if (!roles) {
+        if (!isAdmin) {
           toast.error("Admin access required");
           await supabase.auth.signOut();
-          setLoading(false);
           return;
         }
 
@@ -73,6 +93,7 @@ export default function Auth() {
         navigate("/admin");
       }
     } catch (error: any) {
+      console.error('Unexpected error:', error);
       toast.error(error.message || "Failed to sign in");
     } finally {
       setLoading(false);
@@ -92,11 +113,25 @@ export default function Auth() {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Sign up error:', error);
+        // Provide more specific error messages
+        if (error.message.includes('already registered')) {
+          toast.error("An account with this email already exists. Please sign in instead.");
+        } else {
+          toast.error(error.message || "Failed to sign up");
+        }
+        return;
+      }
 
-      toast.success("Account created! Please check your email to confirm.");
+      if (data.user) {
+        toast.success("Account created! Please check your email to confirm your account.");
+      } else {
+        toast.success("Please check your email to confirm your account.");
+      }
       setIsSignUp(false);
     } catch (error: any) {
+      console.error('Unexpected error:', error);
       toast.error(error.message || "Failed to sign up");
     } finally {
       setLoading(false);
