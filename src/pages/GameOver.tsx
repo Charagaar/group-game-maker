@@ -39,6 +39,9 @@ export default function GameOver() {
             You've used all your attempts.
           </p>
           <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button onClick={() => window.history.back()} variant="outline" className="text-xs sm:text-sm px-3 sm:px-4">
+              <span className="truncate">Go Back to Game</span>
+            </Button>
             <Button onClick={shareGame} variant="outline" className="text-xs sm:text-sm px-3 sm:px-4">
               <Share2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
               <span className="truncate">Share with Friends</span>

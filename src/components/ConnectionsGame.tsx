@@ -200,9 +200,6 @@ export default function ConnectionsGame() {
               })
               .eq("session_id", sessionId);
           }
-          
-          // Navigate to game won page
-          navigate("/game-won");
         }
       }
     } else {
@@ -226,9 +223,6 @@ export default function ConnectionsGame() {
             })
             .eq("session_id", sessionId);
         }
-        
-        // Navigate to game over page
-        navigate("/game-over");
       }
     }
   };
@@ -300,7 +294,7 @@ export default function ConnectionsGame() {
         )}
 
         {/* Game Controls */}
-        {words.length > 0 && (
+        {words.length > 0 && !gameWon && !gameLost && (
           <div className="space-y-2 sm:space-y-4">
             <div className="flex items-center justify-center gap-1">
               {[...Array(remainingAttempts)].map((_, i) => (
@@ -349,6 +343,19 @@ export default function ConnectionsGame() {
                 <span className="truncate">Deselect All</span>
               </Button>
             </div>
+          </div>
+        )}
+
+        {/* Results Button - shown when game is over */}
+        {(gameWon || gameLost) && (
+          <div className="flex justify-center">
+            <Button
+              onClick={() => navigate(gameWon ? "/game-won" : "/game-over")}
+              size="lg"
+              className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8"
+            >
+              View Results
+            </Button>
           </div>
         )}
       </div>
