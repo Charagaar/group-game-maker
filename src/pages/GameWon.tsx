@@ -1,11 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Share2, Instagram } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const INSTAGRAM_URL =
   "https://www.instagram.com/unmapped.blr?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==";
 
 export default function GameWon() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sessionId = searchParams.get('session');
+  
   const shareGame = async () => {
     const url = window.location.origin;
     
@@ -42,8 +47,12 @@ export default function GameWon() {
             Let's go and share about us!
           </p>
           <div className="flex flex-col sm:flex-row gap-2 justify-center">
-            <Button onClick={() => window.history.back()} variant="outline" className="text-xs sm:text-sm px-3 sm:px-4">
-              <span className="truncate">Go Back to Game</span>
+            <Button 
+              onClick={() => navigate(`/?view=answers&result=won${sessionId ? `&session=${sessionId}` : ''}`)} 
+              variant="outline" 
+              className="text-xs sm:text-sm px-3 sm:px-4"
+            >
+              <span className="truncate">View Answers</span>
             </Button>
             <Button onClick={shareGame} variant="outline" className="text-xs sm:text-sm px-3 sm:px-4">
               <Share2 className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />

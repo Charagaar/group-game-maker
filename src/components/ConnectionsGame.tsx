@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Shuffle, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface Word {
   id: string;
@@ -51,6 +51,7 @@ const difficultyColors = {
 
 export default function ConnectionsGame() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [words, setWords] = useState<Word[]>([]);
   const [selectedWords, setSelectedWords] = useState<string[]>([]);
   const [solvedCategories, setSolvedCategories] = useState<Category[]>([]);
@@ -58,10 +59,53 @@ export default function ConnectionsGame() {
   const [gameWon, setGameWon] = useState(false);
   const [gameLost, setGameLost] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  
+  // Check if we're in "view answers" mode
+  const viewMode = searchParams.get('view');
+  const isViewingAnswers = viewMode === 'answers';
+  const resultType = searchParams.get('result'); // 'won' or 'lost'
 
   useEffect(() => {
     initializeGame();
   }, []);
+
+  // If viewing answers, reveal all categories
+  useEffect(() => {
+    if (isViewingAnswers) {
+      const loadAnswers = async () => {
+        let gameData: Category[] = FALLBACK_GAME_DATA;
+        
+        try {
+          const { data, error } = await supabase
+            .from("game_categories")
+            .select("*")
+            .order("display_order");
+
+          if (error) {
+            console.error("Failed to load game data:", error);
+          } else if (data && data.length > 0) {
+            gameData = data.map(cat => ({
+              name: cat.name,
+              difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
+              words: cat.words,
+            }));
+          }
+        } catch (err) {
+          console.error("Error loading game data:", err);
+        }
+        
+        setSolvedCategories(gameData);
+        setWords([]);
+        if (resultType === 'won') {
+          setGameWon(true);
+        } else if (resultType === 'lost') {
+          setGameLost(true);
+        }
+      };
+      
+      loadAnswers();
+    }
+  }, [isViewingAnswers, resultType]);
 
   const initializeGame = async () => {
     let gameData: Category[] = FALLBACK_GAME_DATA;
@@ -201,8 +245,8 @@ export default function ConnectionsGame() {
               .eq("session_id", sessionId);
           }
           
-          // Navigate to game won page
-          navigate("/game-won");
+          // Navigate to game won page with session info
+          navigate(`/game-won?session=${sessionId}`);
         }
       }
     } else {
@@ -227,8 +271,8 @@ export default function ConnectionsGame() {
             .eq("session_id", sessionId);
         }
         
-        // Navigate to game over page
-        navigate("/game-over");
+        // Navigate to game over page with session info
+        navigate(`/game-over?session=${sessionId}`);
       }
     }
   };
@@ -300,7 +344,7 @@ export default function ConnectionsGame() {
         )}
 
         {/* Game Controls */}
-        {words.length > 0 && (
+        {words.length > 0 && !isViewingAnswers && (
           <div className="space-y-2 sm:space-y-4">
             <div className="flex items-center justify-center gap-1">
               {[...Array(remainingAttempts)].map((_, i) => (
@@ -354,11 +398,11 @@ export default function ConnectionsGame() {
           </div>
         )}
 
-        {/* Back to Results Button - shown when game is over and user came back from results page */}
-        {(gameWon || gameLost) && (
+        {/* Back to Results Button - shown when viewing answers */}
+        {isViewingAnswers && (
           <div className="flex justify-center">
             <Button
-              onClick={() => navigate(gameWon ? "/game-won" : "/game-over")}
+              onClick={() => navigate(resultType === 'won' ? `/game-won?session=${sessionId}` : `/game-over?session=${sessionId}`)}
               variant="outline"
               size="lg"
               className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8"
