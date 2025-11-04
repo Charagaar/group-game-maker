@@ -406,7 +406,7 @@ export default function ConnectionsGame() {
               onClick={() => navigate(resultType === 'won' ? `/game-won?session=${sessionId}` : `/game-over?session=${sessionId}`)}
               variant="outline"
               size="lg"
-              className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8"
+              className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 hover:bg-category-easy hover:text-category-easy-foreground active:bg-category-easy active:text-category-easy-foreground"
             >
               Back to Results
             </Button>
