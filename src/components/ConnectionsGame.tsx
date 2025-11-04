@@ -200,6 +200,9 @@ export default function ConnectionsGame() {
               })
               .eq("session_id", sessionId);
           }
+          
+          // Navigate to game won page
+          navigate("/game-won");
         }
       }
     } else {
@@ -223,6 +226,9 @@ export default function ConnectionsGame() {
             })
             .eq("session_id", sessionId);
         }
+        
+        // Navigate to game over page
+        navigate("/game-over");
       }
     }
   };
@@ -294,7 +300,7 @@ export default function ConnectionsGame() {
         )}
 
         {/* Game Controls */}
-        {words.length > 0 && !gameWon && !gameLost && (
+        {words.length > 0 && (
           <div className="space-y-2 sm:space-y-4">
             <div className="flex items-center justify-center gap-1">
               {[...Array(remainingAttempts)].map((_, i) => (
@@ -313,48 +319,51 @@ export default function ConnectionsGame() {
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 justify-center">
-              <Button
-                variant="outline"
-                onClick={() => shuffleWords()}
-                size="sm"
-                className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
-              >
-                <Shuffle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                <span className="truncate">Shuffle</span>
-              </Button>
-              <Button
-                onClick={submitGuess}
-                disabled={selectedWords.length !== 4}
-                size="sm"
-                className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm px-2 sm:px-3"
-              >
-                <span className="truncate">
-                  Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
-                </span>
-              </Button>
-              <Button
-                variant="outline"
-                onClick={deselectAll}
-                disabled={selectedWords.length === 0}
-                size="sm"
-                className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
-              >
-                <span className="truncate">Deselect All</span>
-              </Button>
-            </div>
+            {!gameWon && !gameLost && (
+              <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => shuffleWords()}
+                  size="sm"
+                  className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  <Shuffle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                  <span className="truncate">Shuffle</span>
+                </Button>
+                <Button
+                  onClick={submitGuess}
+                  disabled={selectedWords.length !== 4}
+                  size="sm"
+                  className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  <span className="truncate">
+                    Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
+                  </span>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={deselectAll}
+                  disabled={selectedWords.length === 0}
+                  size="sm"
+                  className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
+                >
+                  <span className="truncate">Deselect All</span>
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Results Button - shown when game is over */}
+        {/* Back to Results Button - shown when game is over and user came back from results page */}
         {(gameWon || gameLost) && (
           <div className="flex justify-center">
             <Button
               onClick={() => navigate(gameWon ? "/game-won" : "/game-over")}
+              variant="outline"
               size="lg"
               className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8"
             >
-              View Results
+              Back to Results
             </Button>
           </div>
         )}
