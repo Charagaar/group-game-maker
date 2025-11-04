@@ -66,8 +66,9 @@ export default function ConnectionsGame() {
   const resultType = searchParams.get('result'); // 'won' or 'lost'
 
   useEffect(() => {
+    if (isViewingAnswers) return; // Skip game init when viewing answers
     initializeGame();
-  }, []);
+  }, [isViewingAnswers]);
 
   // If viewing answers, reveal all categories
   useEffect(() => {
