@@ -20,20 +20,9 @@ export default function Auth() {
   }, []);
 
   const checkInitialAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    // If already logged in as admin, show a message but don't auto-redirect
-    if (session) {
-      const { data: isAdmin } = await supabase
-        .rpc('has_role', {
-          _user_id: session.user.id,
-          _role: 'admin'
-        });
-      
-      if (isAdmin) {
-        toast.info("You're already logged in. Redirecting to admin...");
-        setTimeout(() => navigate("/admin"), 1000);
-      }
-    }
+    // Do not auto-redirect on the auth page; always show the login form
+    // If you want to clear existing sessions when arriving to /auth, uncomment:
+    // await supabase.auth.signOut();
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
