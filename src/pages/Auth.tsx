@@ -15,32 +15,23 @@ export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false);
 
   useEffect(() => {
-    // Check if already authenticated
-    checkAuth();
+    // Only check auth status, don't auto-redirect
+    checkInitialAuth();
   }, []);
 
-  const checkAuth = async () => {
+  const checkInitialAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
+    // If already logged in as admin, show a message but don't auto-redirect
     if (session) {
-      // Check if user has admin role using has_role function (bypasses RLS)
-      const { data: isAdmin, error: roleError } = await supabase
+      const { data: isAdmin } = await supabase
         .rpc('has_role', {
           _user_id: session.user.id,
           _role: 'admin'
         });
       
-      if (roleError) {
-        console.error('Role check error:', roleError);
-        toast.error("Error checking admin access");
-        navigate("/");
-        return;
-      }
-      
       if (isAdmin) {
-        navigate("/admin");
-      } else {
-        toast.info("Signed in. Admin access required for admin panel.");
-        navigate("/");
+        toast.info("You're already logged in. Redirecting to admin...");
+        setTimeout(() => navigate("/admin"), 1000);
       }
     }
   };
