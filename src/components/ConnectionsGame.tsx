@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Shuffle, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { fingerprintPuzzle, getClientId, startPlay, completePlay } from "@/lib/tracker";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface Word {
@@ -59,6 +60,7 @@ export default function ConnectionsGame() {
   const [gameWon, setGameWon] = useState(false);
   const [gameLost, setGameLost] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [puzzleId, setPuzzleId] = useState<string | null>(null);
   
   // Check if we're in "view answers" mode
   const viewMode = searchParams.get('view');
@@ -133,6 +135,16 @@ export default function ConnectionsGame() {
       console.error("Error loading game data:", err);
     }
 
+    // Compute a stable puzzle fingerprint for client-side tracking
+    try {
+      // Ensure client id exists early (stored in localStorage)
+      getClientId();
+    } catch {}
+    const computedPuzzleId = fingerprintPuzzle(
+      (gameData || []).map((c) => ({ name: c.name, words: c.words }))
+    );
+    setPuzzleId(computedPuzzleId);
+
     const allWords: Word[] = [];
     gameData.forEach((category) => {
       category.words.forEach((word: string) => {
@@ -156,6 +168,10 @@ export default function ConnectionsGame() {
 
     if (!sessionError) {
       setSessionId(newSessionId);
+      // Track locally as well
+      try {
+        startPlay(newSessionId, computedPuzzleId);
+      } catch {}
     }
 
     // Reset game state
@@ -245,6 +261,12 @@ export default function ConnectionsGame() {
               })
               .eq("session_id", sessionId);
           }
+          // Update local tracker as won
+          try {
+            if (puzzleId) {
+              completePlay(sessionId!, puzzleId, true, mistakes, 4);
+            }
+          } catch {}
           
           // Navigate to game won page with session info
           navigate(`/game-won?session=${sessionId}`);
@@ -271,6 +293,12 @@ export default function ConnectionsGame() {
             })
             .eq("session_id", sessionId);
         }
+        // Update local tracker as loss
+        try {
+          if (puzzleId) {
+            completePlay(sessionId!, puzzleId, false, mistakes + 1, solvedCategories.length);
+          }
+        } catch {}
         
         // Navigate to game over page with session info
         navigate(`/game-over?session=${sessionId}`);
