@@ -45,8 +45,8 @@ All colors MUST be HSL.
     --category-medium: 226 70% 65%;
     --category-medium-foreground: 226 25% 20%;
     
-    --category-hard: 279 70% 65%;
-    --category-hard-foreground: 279 20% 20%;
+    --category-hard: 226 40% 46%;
+    --category-hard-foreground: 0 0% 98%;
     
     --category-expert: 260 40% 46%;
     --category-expert-foreground: 0 0% 98%;

@@ -49,6 +49,13 @@ const difficultyColors = {
   expert: "bg-category-expert text-category-expert-foreground",
 };
 
+const difficultyOrder: Record<"easy" | "medium" | "hard" | "expert", number> = {
+  easy: 1,
+  medium: 2,
+  hard: 3,
+  expert: 4,
+};
+
 export default function ConnectionsGame() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -294,7 +301,9 @@ export default function ConnectionsGame() {
         {/* Solved Categories */}
         {solvedCategories.length > 0 && (
           <div className="space-y-1 sm:space-y-2">
-            {solvedCategories.map((category) => (
+            {[...solvedCategories]
+              .sort((a, b) => difficultyOrder[a.difficulty] - difficultyOrder[b.difficulty])
+              .map((category) => (
               <div
                 key={category.name}
                 className={`p-2 sm:p-4 rounded-lg ${difficultyColors[category.difficulty]} transition-all`}
