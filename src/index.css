@@ -126,7 +126,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Silkscreen', monospace;
+    font-family: 'VT323', monospace;
     font-size: 12px;
     font-weight: 400;
     image-rendering: pixelated;
@@ -135,7 +135,7 @@ All colors MUST be HSL.
   }
   
   button, input, select, textarea {
-    font-family: 'Silkscreen', monospace;
+    font-family: 'VT323', monospace;
     font-weight: 400;
   }
 }
