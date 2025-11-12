@@ -45,10 +45,10 @@ All colors MUST be HSL.
     --category-medium: 226 70% 65%;
     --category-medium-foreground: 226 25% 20%;
     
-    --category-hard: 226 40% 46%;
+    --category-hard: 260 40% 46%;
     --category-hard-foreground: 0 0% 98%;
     
-    --category-expert: 260 40% 46%;
+    --category-expert: 226 40% 46%;
     --category-expert-foreground: 0 0% 98%;
 
     /* Interactive states */
@@ -126,14 +126,16 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Press Start 2P', cursive;
+    font-family: 'Pixelify Sans', cursive;
     font-size: 12px;
+    font-weight: 400;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
   }
   
   button, input, select, textarea {
-    font-family: 'Press Start 2P', cursive;
+    font-family: 'Pixelify Sans', cursive;
+    font-weight: 400;
   }
 }
