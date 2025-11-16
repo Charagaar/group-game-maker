@@ -39,17 +39,17 @@ All colors MUST be HSL.
     --radius: 0rem;
 
     /* Game category colors */
-    --category-easy: 350 75% 85%;
-    --category-easy-foreground: 350 30% 25%;
+    --category-easy: 203 65% 60%;
+    --category-easy-foreground: 0 0% 98%;
     
-    --category-medium: 180 50% 80%;
-    --category-medium-foreground: 180 40% 20%;
+    --category-medium: 244 65% 60%;
+    --category-medium-foreground: 0 0% 98%;
     
-    --category-hard: 50 80% 85%;
-    --category-hard-foreground: 50 40% 25%;
+    --category-hard: 225 65% 60%;
+    --category-hard-foreground: 0 0% 98%;
     
-    --category-expert: 25 85% 75%;
-    --category-expert-foreground: 25 30% 20%;
+    --category-expert: 263 64% 60%;
+    --category-expert-foreground: 0 0% 98%;
 
     /* Interactive states */
     --selected: 240 6% 25%;
@@ -126,14 +126,16 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Press Start 2P', cursive;
-    font-size: 12px;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    font-weight: 400;
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
   }
   
   button, input, select, textarea {
-    font-family: 'Press Start 2P', cursive;
+    font-family: 'VT323', monospace;
+    font-weight: 400;
   }
 }

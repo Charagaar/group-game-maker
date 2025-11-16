@@ -42,9 +42,6 @@ export default function GameWon() {
           <p className="text-muted-foreground">
             You found all four groups!
           </p>
-          <p className="text-muted-foreground">
-            Let's go and share about us!
-          </p>
           <div className="p-4 sm:p-6 bg-muted/30 rounded-lg border mx-auto max-w-md w-full">
             <div className="flex flex-col gap-2">
               <Button 
