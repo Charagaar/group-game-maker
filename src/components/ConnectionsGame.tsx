@@ -314,7 +314,12 @@ export default function ConnectionsGame() {
                   {category.name}
                 </h3>
                 <p className="text-xs sm:text-sm opacity-90">
-                  {category.words.join(", ")}
+                  {category.words.map((word, idx) => (
+                    <span key={idx}>
+                      {word.split(' ').join(' ')}
+                      {idx < category.words.length - 1 && ', '}
+                    </span>
+                  ))}
                 </p>
               </div>
             ))}
@@ -335,20 +340,18 @@ export default function ConnectionsGame() {
                     aspect-square p-1 sm:p-2 rounded-lg font-semibold ${getFontSize(word.text)}
                     transition-all duration-200
                     flex items-center justify-center text-center leading-tight
-                    break-words overflow-wrap-anywhere
                     ${
                       isSelected
                         ? "bg-selected text-selected-foreground scale-95"
                         : "bg-card hover:bg-hover border border-border"
                     }
                   `}
-                  style={{
-                    wordBreak: 'break-word',
-                    overflowWrap: 'anywhere',
-                    hyphens: 'none'
-                  }}
                 >
-                  <span className="max-w-full px-0.5 leading-[1.1]">{word.text}</span>
+                  <span className="max-w-full px-0.5 leading-[1.1] flex flex-col items-center justify-center">
+                    {word.text.split(' ').map((part, idx) => (
+                      <span key={idx}>{part}</span>
+                    ))}
+                  </span>
                 </button>
               );
             })}
