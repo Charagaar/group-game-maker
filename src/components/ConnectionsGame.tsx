@@ -19,6 +19,8 @@ interface Category {
   words: string[];
 }
 
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "unknown";
+
 // Fallback game data if database is empty
 const FALLBACK_GAME_DATA: Category[] = [
   {
@@ -55,6 +57,14 @@ const difficultyOrder: Record<"easy" | "medium" | "hard" | "expert", number> = {
   medium: 2,
   hard: 3,
   expert: 4,
+};
+
+const getClientIdSafe = () => {
+  try {
+    return getClientId();
+  } catch {
+    return null;
+  }
 };
 
 export default function ConnectionsGame() {
@@ -143,10 +153,7 @@ export default function ConnectionsGame() {
     }
 
     // Compute a stable puzzle fingerprint for client-side tracking
-    try {
-      // Ensure client id exists early (stored in localStorage)
-      getClientId();
-    } catch {}
+    const clientId = getClientIdSafe();
     const computedPuzzleId = fingerprintPuzzle(
       (gameData || []).map((c) => ({ name: c.name, words: c.words }))
     );
@@ -171,6 +178,9 @@ export default function ConnectionsGame() {
       .from("game_sessions")
       .insert({
         session_id: newSessionId,
+        client_id: clientId,
+        puzzle_id: computedPuzzleId,
+        app_version: APP_VERSION,
       });
 
     if (!sessionError) {
@@ -267,6 +277,9 @@ export default function ConnectionsGame() {
                 game_won: true,
                 lives_lost: mistakes,
                 categories_solved: 4,
+                client_id: getClientIdSafe(),
+                puzzle_id: puzzleId,
+                app_version: APP_VERSION,
               })
               .eq("session_id", sessionId);
           }
@@ -299,6 +312,9 @@ export default function ConnectionsGame() {
               game_won: false,
               lives_lost: mistakes + 1,
               categories_solved: solvedCategories.length,
+              client_id: getClientIdSafe(),
+              puzzle_id: puzzleId,
+              app_version: APP_VERSION,
             })
             .eq("session_id", sessionId);
         }
