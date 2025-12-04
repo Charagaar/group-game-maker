@@ -24,10 +24,14 @@ SELECT
   COUNT(*) FILTER (WHERE completed_at IS NULL) AS incomplete,
   COUNT(*) FILTER (WHERE completed_at IS NOT NULL AND game_won = TRUE) AS wins,
   COUNT(*) FILTER (WHERE completed_at IS NOT NULL AND game_won = FALSE) AS losses,
+  -- Total failures: completed losses + incomplete (incomplete games are treated as failed)
+  COUNT(*) FILTER (WHERE completed_at IS NOT NULL AND game_won = FALSE) + 
+    COUNT(*) FILTER (WHERE completed_at IS NULL) AS total_failures,
   AVG(lives_lost) AS avg_lives_lost,
   AVG(categories_solved) AS avg_categories_solved,
   MIN(started_at) AS first_seen,
   COALESCE(MAX(completed_at), MAX(started_at)) AS last_seen,
+  -- Win rate: wins / total sessions (incomplete games count as failures)
   CASE WHEN COUNT(*) > 0
     THEN COUNT(*) FILTER (WHERE game_won = TRUE)::numeric / COUNT(*)
     ELSE 0 END AS win_rate
@@ -43,6 +47,9 @@ SELECT
   COUNT(*) FILTER (WHERE completed_at IS NOT NULL AND game_won = TRUE) AS wins,
   COUNT(*) FILTER (WHERE completed_at IS NOT NULL AND game_won = FALSE) AS losses,
   COUNT(*) FILTER (WHERE completed_at IS NULL) AS incomplete,
+  -- Total failures: completed losses + incomplete (incomplete games are treated as failed)
+  COUNT(*) FILTER (WHERE completed_at IS NOT NULL AND game_won = FALSE) + 
+    COUNT(*) FILTER (WHERE completed_at IS NULL) AS total_failures,
   COUNT(DISTINCT client_id) AS unique_clients,
   AVG(lives_lost) AS avg_lives_lost,
   AVG(categories_solved) AS avg_categories_solved
