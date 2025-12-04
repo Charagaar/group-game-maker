@@ -190,7 +190,7 @@ export default function Admin() {
                     </select>
                     <div className="mt-2 flex items-center gap-2">
                       <span className="text-sm text-muted-foreground">Preview:</span>
-                      <div 
+                      <div
                         className={`px-4 py-2 rounded-lg text-sm font-semibold ${
                           category.difficulty === 'easy' ? 'bg-category-easy text-category-easy-foreground' :
                           category.difficulty === 'medium' ? 'bg-category-medium text-category-medium-foreground' :
@@ -198,10 +198,10 @@ export default function Admin() {
                           'bg-category-expert text-category-expert-foreground'
                         }`}
                       >
-                        {category.difficulty === 'easy' ? '1. Easy - Pastel Pink' :
-                         category.difficulty === 'medium' ? '2. Medium - Pearl Aqua' :
-                         category.difficulty === 'hard' ? '3. Hard - Pastel Yellow' :
-                         '4. Expert - Papaya Orange'}
+                        {category.difficulty === 'easy' ? 'Easy' :
+                         category.difficulty === 'medium' ? 'Medium' :
+                         category.difficulty === 'hard' ? 'Hard' :
+                         'Expert'}
                       </div>
                     </div>
                   </div>

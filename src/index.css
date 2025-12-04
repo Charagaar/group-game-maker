@@ -39,15 +39,19 @@ All colors MUST be HSL.
     --radius: 0rem;
 
     /* Game category colors */
-    --category-easy: 203 65% 60%;
+    /* Easy: #F2CB05 -> hsl(50, 96%, 48%) */
+    --category-easy: 50 96% 48%;
     --category-easy-foreground: 0 0% 98%;
     
-    --category-medium: 244 65% 60%;
+    /* Medium: #59D0BD -> hsl(170, 56%, 58%) */
+    --category-medium: 170 56% 58%;
     --category-medium-foreground: 0 0% 98%;
     
-    --category-hard: 225 65% 60%;
+    /* Hard: #025939 -> hsl(158, 96%, 18%) */
+    --category-hard: 158 96% 18%;
     --category-hard-foreground: 0 0% 98%;
     
+    /* Expert: keep existing */
     --category-expert: 263 64% 60%;
     --category-expert-foreground: 0 0% 98%;
 

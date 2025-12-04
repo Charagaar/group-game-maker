@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Shuffle, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { fingerprintPuzzle, getClientId, startPlay, completePlay } from "@/lib/tracker";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface Word {
@@ -17,6 +18,8 @@ interface Category {
   difficulty: "easy" | "medium" | "hard" | "expert";
   words: string[];
 }
+
+const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "unknown";
 
 // Fallback game data if database is empty
 const FALLBACK_GAME_DATA: Category[] = [
@@ -56,6 +59,14 @@ const difficultyOrder: Record<"easy" | "medium" | "hard" | "expert", number> = {
   expert: 4,
 };
 
+const getClientIdSafe = () => {
+  try {
+    return getClientId();
+  } catch {
+    return null;
+  }
+};
+
 export default function ConnectionsGame() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -66,6 +77,7 @@ export default function ConnectionsGame() {
   const [gameWon, setGameWon] = useState(false);
   const [gameLost, setGameLost] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [puzzleId, setPuzzleId] = useState<string | null>(null);
   
   // Check if we're in "view answers" mode
   const viewMode = searchParams.get('view');
@@ -140,6 +152,13 @@ export default function ConnectionsGame() {
       console.error("Error loading game data:", err);
     }
 
+    // Compute a stable puzzle fingerprint for client-side tracking
+    const clientId = getClientIdSafe();
+    const computedPuzzleId = fingerprintPuzzle(
+      (gameData || []).map((c) => ({ name: c.name, words: c.words }))
+    );
+    setPuzzleId(computedPuzzleId);
+
     const allWords: Word[] = [];
     gameData.forEach((category) => {
       category.words.forEach((word: string) => {
@@ -159,10 +178,17 @@ export default function ConnectionsGame() {
       .from("game_sessions")
       .insert({
         session_id: newSessionId,
+        client_id: clientId,
+        puzzle_id: computedPuzzleId,
+        app_version: APP_VERSION,
       });
 
     if (!sessionError) {
       setSessionId(newSessionId);
+      // Track locally as well
+      try {
+        startPlay(newSessionId, computedPuzzleId);
+      } catch {}
     }
 
     // Reset game state
@@ -251,9 +277,18 @@ export default function ConnectionsGame() {
                 game_won: true,
                 lives_lost: mistakes,
                 categories_solved: 4,
+                client_id: getClientIdSafe(),
+                puzzle_id: puzzleId,
+                app_version: APP_VERSION,
               })
               .eq("session_id", sessionId);
           }
+          // Update local tracker as won
+          try {
+            if (puzzleId) {
+              completePlay(sessionId!, puzzleId, true, mistakes, 4);
+            }
+          } catch {}
           
           // Navigate to game won page with session info
           navigate(`/game-won?session=${sessionId}`);
@@ -277,9 +312,18 @@ export default function ConnectionsGame() {
               game_won: false,
               lives_lost: mistakes + 1,
               categories_solved: solvedCategories.length,
+              client_id: getClientIdSafe(),
+              puzzle_id: puzzleId,
+              app_version: APP_VERSION,
             })
             .eq("session_id", sessionId);
         }
+        // Update local tracker as loss
+        try {
+          if (puzzleId) {
+            completePlay(sessionId!, puzzleId, false, mistakes + 1, solvedCategories.length);
+          }
+        } catch {}
         
         // Navigate to game over page with session info
         navigate(`/game-over?session=${sessionId}`);

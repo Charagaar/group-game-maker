@@ -51,3 +51,4 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.grant_admin_by_user_id(UUID) TO authenticated;
 
+
