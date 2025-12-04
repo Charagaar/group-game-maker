@@ -46,38 +46,29 @@ export type Database = {
       }
       game_sessions: {
         Row: {
-          app_version: string | null
           categories_solved: number | null
-          client_id: string | null
           completed_at: string | null
           game_won: boolean | null
           id: string
           lives_lost: number | null
-          puzzle_id: string | null
           session_id: string
           started_at: string
         }
         Insert: {
-          app_version?: string | null
           categories_solved?: number | null
-          client_id?: string | null
           completed_at?: string | null
           game_won?: boolean | null
           id?: string
           lives_lost?: number | null
-          puzzle_id?: string | null
           session_id: string
           started_at?: string
         }
         Update: {
-          app_version?: string | null
           categories_solved?: number | null
-          client_id?: string | null
           completed_at?: string | null
           game_won?: boolean | null
           id?: string
           lives_lost?: number | null
-          puzzle_id?: string | null
           session_id?: string
           started_at?: string
         }
@@ -106,156 +97,7 @@ export type Database = {
       }
     }
     Views: {
-      game_metrics_by_client_puzzle: {
-        Row: {
-          avg_categories_solved: number | null
-          avg_lives_lost: number | null
-          client_id: string | null
-          first_seen: string | null
-          incomplete: number | null
-          last_seen: string | null
-          losses: number | null
-          puzzle_id: string | null
-          sessions: number | null
-          win_rate: number | null
-          wins: number | null
-        }
-        Insert: {
-          avg_categories_solved?: number | null
-          avg_lives_lost?: number | null
-          client_id?: string | null
-          first_seen?: string | null
-          incomplete?: number | null
-          last_seen?: string | null
-          losses?: number | null
-          puzzle_id?: string | null
-          sessions?: number | null
-          win_rate?: number | null
-          wins?: number | null
-        }
-        Update: {
-          avg_categories_solved?: number | null
-          avg_lives_lost?: number | null
-          client_id?: string | null
-          first_seen?: string | null
-          incomplete?: number | null
-          last_seen?: string | null
-          losses?: number | null
-          puzzle_id?: string | null
-          sessions?: number | null
-          win_rate?: number | null
-          wins?: number | null
-        }
-        Relationships: []
-      }
-      game_metrics_by_client: {
-        Row: {
-          avg_categories_solved: number | null
-          avg_lives_lost: number | null
-          client_id: string | null
-          first_seen: string | null
-          incomplete: number | null
-          last_seen: string | null
-          sessions: number | null
-          losses: number | null
-          win_rate: number | null
-          wins: number | null
-        }
-        Insert: {
-          avg_categories_solved?: number | null
-          avg_lives_lost?: number | null
-          client_id?: string | null
-          first_seen?: string | null
-          incomplete?: number | null
-          last_seen?: string | null
-          sessions?: number | null
-          losses?: number | null
-          win_rate?: number | null
-          wins?: number | null
-        }
-        Update: {
-          avg_categories_solved?: number | null
-          avg_lives_lost?: number | null
-          client_id?: string | null
-          first_seen?: string | null
-          incomplete?: number | null
-          last_seen?: string | null
-          sessions?: number | null
-          losses?: number | null
-          win_rate?: number | null
-          wins?: number | null
-        }
-        Relationships: []
-      }
-      game_metrics_daily_by_puzzle: {
-        Row: {
-          avg_categories_solved: number | null
-          avg_lives_lost: number | null
-          day: string | null
-          incomplete: number | null
-          losses: number | null
-          puzzle_id: string | null
-          sessions: number | null
-          unique_clients: number | null
-          wins: number | null
-        }
-        Insert: {
-          avg_categories_solved?: number | null
-          avg_lives_lost?: number | null
-          day?: string | null
-          incomplete?: number | null
-          losses?: number | null
-          puzzle_id?: string | null
-          sessions?: number | null
-          unique_clients?: number | null
-          wins?: number | null
-        }
-        Update: {
-          avg_categories_solved?: number | null
-          avg_lives_lost?: number | null
-          day?: string | null
-          incomplete?: number | null
-          losses?: number | null
-          puzzle_id?: string | null
-          sessions?: number | null
-          unique_clients?: number | null
-          wins?: number | null
-        }
-        Relationships: []
-      }
-      game_metrics_daily: {
-        Row: {
-          avg_categories_solved: number | null
-          avg_lives_lost: number | null
-          day: string | null
-          incomplete: number | null
-          losses: number | null
-          sessions: number | null
-          unique_clients: number | null
-          wins: number | null
-        }
-        Insert: {
-          avg_categories_solved?: number | null
-          avg_lives_lost?: number | null
-          day?: string | null
-          incomplete?: number | null
-          losses?: number | null
-          sessions?: number | null
-          unique_clients?: number | null
-          wins?: number | null
-        }
-        Update: {
-          avg_categories_solved?: number | null
-          avg_lives_lost?: number | null
-          day?: string | null
-          incomplete?: number | null
-          losses?: number | null
-          sessions?: number | null
-          unique_clients?: number | null
-          wins?: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       grant_admin_by_user_id: { Args: { _user_id: string }; Returns: boolean }
