@@ -47,34 +47,28 @@ export type Database = {
       game_sessions: {
         Row: {
           categories_solved: number | null
-          client_id: string | null
           completed_at: string | null
           game_won: boolean | null
           id: string
           lives_lost: number | null
-          puzzle_id: string | null
           session_id: string
           started_at: string
         }
         Insert: {
           categories_solved?: number | null
-          client_id?: string | null
           completed_at?: string | null
           game_won?: boolean | null
           id?: string
           lives_lost?: number | null
-          puzzle_id?: string | null
           session_id: string
           started_at?: string
         }
         Update: {
           categories_solved?: number | null
-          client_id?: string | null
           completed_at?: string | null
           game_won?: boolean | null
           id?: string
           lives_lost?: number | null
-          puzzle_id?: string | null
           session_id?: string
           started_at?: string
         }
@@ -103,59 +97,7 @@ export type Database = {
       }
     }
     Views: {
-      game_metrics_by_client: {
-        Row: {
-          avg_categories_solved: number | null
-          avg_lives_lost: number | null
-          client_id: string | null
-          first_session: string | null
-          incomplete: number | null
-          last_session: string | null
-          losses: number | null
-          total_sessions: number | null
-          win_rate: number | null
-          wins: number | null
-        }
-        Relationships: []
-      }
-      game_metrics_by_client_puzzle: {
-        Row: {
-          avg_lives_lost: number | null
-          client_id: string | null
-          incomplete: number | null
-          losses: number | null
-          puzzle_id: string | null
-          total_sessions: number | null
-          win_rate: number | null
-          wins: number | null
-        }
-        Relationships: []
-      }
-      game_metrics_daily: {
-        Row: {
-          date: string | null
-          incomplete: number | null
-          losses: number | null
-          total_sessions: number | null
-          unique_clients: number | null
-          win_rate: number | null
-          wins: number | null
-        }
-        Relationships: []
-      }
-      game_metrics_daily_by_puzzle: {
-        Row: {
-          date: string | null
-          incomplete: number | null
-          losses: number | null
-          puzzle_id: string | null
-          total_sessions: number | null
-          unique_clients: number | null
-          win_rate: number | null
-          wins: number | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       grant_admin_by_user_id: { Args: { _user_id: string }; Returns: boolean }
