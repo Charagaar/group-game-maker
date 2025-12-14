@@ -64,15 +64,51 @@ export default function Admin() {
       return;
     }
 
-    if (data) {
-      setCategories(data.map(cat => ({
-        name: cat.name,
-        difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
-        words: cat.words
-      })));
-    }
-  };
+    const difficulties: Category["difficulty"][] = [
+      "easy",
+      "medium",
+      "hard",
+      "expert",
+    ];
 
+    const emptyWords = ["", "", "", ""];
+
+    if (!data || data.length === 0) {
+      // Initialize with one category per difficulty if nothing exists yet
+      setCategories(
+        difficulties.map((difficulty) => ({
+          name: "",
+          difficulty,
+          words: emptyWords,
+        }))
+      );
+      return;
+    }
+
+    // Normalize to exactly one category per difficulty in a fixed order
+    const normalizedCategories: Category[] = difficulties.map((difficulty) => {
+      const candidates = data
+        .filter((cat) => cat.difficulty === difficulty)
+        .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+      if (candidates.length > 0) {
+        const picked = candidates[0];
+        return {
+          name: picked.name,
+          difficulty: picked.difficulty as Category["difficulty"],
+          words: Array.isArray(picked.words) && picked.words.length > 0 ? picked.words : emptyWords,
+        };
+      }
+
+      return {
+        name: "",
+        difficulty,
+        words: emptyWords,
+      };
+    });
+
+    setCategories(normalizedCategories);
+  };
   const saveData = async () => {
     const { error } = await supabase
       .from("game_categories")

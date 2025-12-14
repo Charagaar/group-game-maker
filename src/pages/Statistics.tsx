@@ -285,12 +285,57 @@ export default function Statistics() {
       if (clientPuzzleError) throw clientPuzzleError;
       if (dailyPuzzleError) throw dailyPuzzleError;
 
-      const sessionRows = (sessions as SessionRow[]) ?? [];
-      const clientRows = (clientView as ClientMetric[]) ?? [];
-      const dailyRows = (dailyView as DailyMetric[]) ?? [];
-      const clientPuzzleRows = (clientPuzzleView as ClientPuzzleMetric[]) ?? [];
-      const dailyPuzzleRows = (dailyPuzzleView as DailyPuzzleMetric[]) ?? [];
+      const sessionRows = ((sessions as SessionRow[]) ?? []) as SessionRow[];
 
+      const clientRows: ClientMetric[] = ((clientView as any[]) ?? []).map((row) => ({
+        client_id: row.client_id ?? null,
+        sessions: row.total_sessions ?? null,
+        wins: row.wins ?? null,
+        losses: row.losses ?? null,
+        incomplete: row.incomplete ?? null,
+        win_rate: row.win_rate ?? null,
+        first_seen: row.first_session ?? null,
+        last_seen: row.last_session ?? null,
+        avg_lives_lost: row.avg_lives_lost ?? null,
+        avg_categories_solved: row.avg_categories_solved ?? null,
+      }));
+
+      const dailyRows: DailyMetric[] = ((dailyView as any[]) ?? []).map((row) => ({
+        day: row.date ?? null,
+        sessions: row.total_sessions ?? null,
+        wins: row.wins ?? null,
+        losses: row.losses ?? null,
+        incomplete: row.incomplete ?? null,
+        unique_clients: row.unique_clients ?? null,
+        avg_lives_lost: row.avg_lives_lost ?? null,
+        avg_categories_solved: row.avg_categories_solved ?? null,
+      }));
+
+      const clientPuzzleRows: ClientPuzzleMetric[] = ((clientPuzzleView as any[]) ?? []).map((row) => ({
+        client_id: row.client_id ?? null,
+        sessions: row.total_sessions ?? null,
+        wins: row.wins ?? null,
+        losses: row.losses ?? null,
+        incomplete: row.incomplete ?? null,
+        win_rate: row.win_rate ?? null,
+        first_seen: row.first_session ?? null,
+        last_seen: row.last_session ?? null,
+        avg_lives_lost: row.avg_lives_lost ?? null,
+        avg_categories_solved: row.avg_categories_solved ?? null,
+        puzzle_id: row.puzzle_id ?? null,
+      }));
+
+      const dailyPuzzleRows: DailyPuzzleMetric[] = ((dailyPuzzleView as any[]) ?? []).map((row) => ({
+        day: row.date ?? null,
+        sessions: row.total_sessions ?? null,
+        wins: row.wins ?? null,
+        losses: row.losses ?? null,
+        incomplete: row.incomplete ?? null,
+        unique_clients: row.unique_clients ?? null,
+        avg_lives_lost: row.avg_lives_lost ?? null,
+        avg_categories_solved: row.avg_categories_solved ?? null,
+        puzzle_id: row.puzzle_id ?? null,
+      }));
       const puzzles = Array.from(
         new Set(sessionRows.filter((s) => s.puzzle_id).map((s) => s.puzzle_id as string))
       ).sort();
