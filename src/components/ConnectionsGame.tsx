@@ -180,7 +180,6 @@ export default function ConnectionsGame() {
         session_id: newSessionId,
         client_id: clientId,
         puzzle_id: computedPuzzleId,
-        app_version: APP_VERSION,
       });
 
     if (!sessionError) {
