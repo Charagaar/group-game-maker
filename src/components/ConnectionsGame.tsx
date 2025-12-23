@@ -205,12 +205,12 @@ export default function ConnectionsGame() {
 
   const getFontSize = (text: string) => {
     const length = text.length;
-    if (length <= 4) return 'text-lg sm:text-2xl';
-    if (length <= 6) return 'text-base sm:text-xl';
-    if (length <= 9) return 'text-sm sm:text-lg';
-    if (length <= 12) return 'text-xs sm:text-base';
-    if (length <= 15) return 'text-[11px] sm:text-sm';
-    return 'text-[10px] sm:text-xs';
+    if (length <= 4) return 'text-xl sm:text-2xl';
+    if (length <= 6) return 'text-lg sm:text-xl';
+    if (length <= 9) return 'text-base sm:text-lg';
+    if (length <= 12) return 'text-sm sm:text-base';
+    if (length <= 15) return 'text-xs sm:text-sm';
+    return 'text-[11px] sm:text-xs';
   };
 
   const toggleWord = (wordId: string) => {
