@@ -295,9 +295,21 @@ export default function ConnectionsGame() {
         }
       }
     } else {
+      // Check if 3 out of 4 are from the same category
+      const categoryCounts: Record<string, number> = {};
+      selectedWordObjects.forEach((w) => {
+        categoryCounts[w.category] = (categoryCounts[w.category] || 0) + 1;
+      });
+      const maxCount = Math.max(...Object.values(categoryCounts));
+      
       setMistakes(mistakes + 1);
       setSelectedWords([]);
-      toast.error("Try again");
+      
+      if (maxCount === 3) {
+        toast.info("Almost there!");
+      } else {
+        toast.error("Try again");
+      }
       
       if (mistakes >= 3) {
         toast.error("Game Over! You've used all your attempts.");
