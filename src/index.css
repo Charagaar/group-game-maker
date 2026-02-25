@@ -50,21 +50,21 @@ All colors MUST be HSL.
     --radius: 0.9rem;
 
     /* Game category colors */
-    /* Easy: #F2CB05 -> hsl(50, 96%, 48%) */
-    --category-easy: 50 96% 48%;
-    --category-easy-foreground: 0 0% 98%;
+    /* Easy: brighter pale yellow */
+    --category-easy: 51 98% 78%;
+    --category-easy-foreground: 235 18% 14%;
     
-    /* Medium: primary blue */
-    --category-medium: 213 92% 56%;
-    --category-medium-foreground: 0 0% 98%;
+    /* Medium: brighter light blue */
+    --category-medium: 212 96% 76%;
+    --category-medium-foreground: 235 18% 14%;
     
-    /* Hard: primary green */
-    --category-hard: 158 96% 18%;
-    --category-hard-foreground: 0 0% 98%;
+    /* Hard: brighter light olive green */
+    --category-hard: 84 44% 68%;
+    --category-hard-foreground: 235 18% 14%;
     
-    /* Expert: keep existing */
-    --category-expert: 263 64% 60%;
-    --category-expert-foreground: 0 0% 98%;
+    /* Expert: brighter pale purple */
+    --category-expert: 266 88% 78%;
+    --category-expert-foreground: 235 18% 14%;
 
     /* Interactive states */
     --selected: 263 76% 91%;
