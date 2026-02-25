@@ -4,6 +4,7 @@ import { Shuffle, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fingerprintPuzzle, getClientId, startPlay, completePlay } from "@/lib/tracker";
+import { buildSolvedDifficultiesParam, type Difficulty } from "@/lib/share";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface Word {
@@ -270,7 +271,8 @@ export default function ConnectionsGame() {
       }
 
       if (categoryData) {
-        setSolvedCategories([...solvedCategories, categoryData]);
+        const nextSolvedCategories = [...solvedCategories, categoryData];
+        setSolvedCategories(nextSolvedCategories);
         setWords(words.filter((w) => !selectedWords.includes(w.id)));
         setSelectedWords([]);
         toast.success("Yay!");
@@ -302,7 +304,10 @@ export default function ConnectionsGame() {
           } catch {}
           
           // Navigate to game won page with session info
-          navigate(`/game-won?session=${sessionId}`);
+          const solvedParam = buildSolvedDifficultiesParam(
+            nextSolvedCategories.map((category) => category.difficulty as Difficulty)
+          );
+          navigate(`/game-won?session=${sessionId}&score=4&solved=${solvedParam}`);
         }
       }
     } else {
@@ -349,7 +354,10 @@ export default function ConnectionsGame() {
         } catch {}
         
         // Navigate to game over page with session info
-        navigate(`/game-over?session=${sessionId}`);
+        const solvedParam = buildSolvedDifficultiesParam(
+          solvedCategories.map((category) => category.difficulty as Difficulty)
+        );
+        navigate(`/game-over?session=${sessionId}&score=${solvedCategories.length}&solved=${solvedParam}`);
       }
     }
   };
