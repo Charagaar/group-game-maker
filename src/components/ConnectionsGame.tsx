@@ -357,8 +357,8 @@ export default function ConnectionsGame() {
   const remainingAttempts = Math.max(0, 4 - mistakes);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-1 sm:p-4 bg-background">
-      <div className="w-full max-w-2xl space-y-2 sm:space-y-6">
+    <div className="flex min-h-screen min-h-[100svh] flex-col items-center justify-center bg-background px-1 py-2 sm:px-4 sm:py-4">
+      <div className="mx-auto w-full max-w-2xl space-y-2 sm:space-y-6">
         {/* Header */}
         <div className="text-center space-y-0.5 sm:space-y-2">
           <div className="relative inline-flex items-center justify-center">

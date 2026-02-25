@@ -67,11 +67,11 @@ All colors MUST be HSL.
     --category-expert-foreground: 235 18% 14%;
 
     /* Interactive states */
-    --selected: 50 95% 88%;
+    --selected: 50 95% 83%;
     --selected-foreground: 235 18% 14%;
     
     --hover: 0 0% 100%;
-    --tile-corner: 50 95% 78%;
+    --tile-corner: 50 95% 73%;
     
     /* Animations */
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
