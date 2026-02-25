@@ -45,7 +45,7 @@ const FALLBACK_GAME_DATA: Category[] = [
   },
 ];
 
-const difficultyColors = {
+const difficultySolvedStyles = {
   easy: "bg-category-easy text-category-easy-foreground",
   medium: "bg-category-medium text-category-medium-foreground",
   hard: "bg-category-hard text-category-hard-foreground",
@@ -221,12 +221,19 @@ export default function ConnectionsGame() {
   };
 
   const deselectAll = () => {
+    if (selectedWords.length === 0) {
+      toast.info("Select a tile first");
+      return;
+    }
     setSelectedWords([]);
   };
 
   const submitGuess = async () => {
     if (gameLost) return;
-    if (selectedWords.length !== 4) return;
+    if (selectedWords.length !== 4) {
+      toast.info("Select 4 tiles");
+      return;
+    }
 
     const selectedWordObjects = words.filter((w) => selectedWords.includes(w.id));
     const categories = [...new Set(selectedWordObjects.map((w) => w.category))];
@@ -349,8 +356,16 @@ export default function ConnectionsGame() {
       <div className="w-full max-w-2xl space-y-2 sm:space-y-6">
         {/* Header */}
         <div className="text-center space-y-0.5 sm:space-y-2">
-          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">Unmap</h1>
-          <p className="text-xs sm:text-base text-muted-foreground">
+          <div className="relative inline-flex items-center justify-center">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0 -z-10 scale-[1.35] rounded-xl bg-white/5 blur-2xl"
+            />
+            <h1 className="inline-flex items-center justify-center rounded-lg border-0 outline-none ring-0 bg-white/72 px-4 py-2 text-2xl font-semibold uppercase tracking-[0.18em] text-foreground shadow-none backdrop-blur-sm sm:px-6 sm:py-3 sm:text-4xl">
+              Unmap
+            </h1>
+          </div>
+          <p className="text-xs sm:text-base text-muted-foreground tracking-[0.04em]">
             Make four groups of four words!
           </p>
         </div>
@@ -363,12 +378,14 @@ export default function ConnectionsGame() {
               .map((category) => (
               <div
                 key={category.name}
-                className={`p-2 sm:p-4 rounded-lg ${difficultyColors[category.difficulty]} transition-all`}
+                className={`relative overflow-hidden rounded-xl p-3 sm:p-4 shadow-[0_8px_20px_hsl(220_25%_20%_/_0.12)] transition-all ${difficultySolvedStyles[category.difficulty]}`}
               >
-                <h3 className="font-semibold text-xs sm:text-sm uppercase mb-0.5 sm:mb-1">
+                <h3
+                  className="relative z-10 mb-1 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.12em] opacity-95"
+                >
                   {category.name}
                 </h3>
-                <p className="text-xs sm:text-sm opacity-90">
+                <p className="relative z-10 text-xs sm:text-sm leading-relaxed opacity-90">
                   {category.words.map((word, idx) => (
                     <span key={idx}>
                       {word.split(' ').join(' ')}
@@ -392,13 +409,13 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    aspect-square p-1 sm:p-2 rounded-lg font-semibold ${getFontSize(word.text)}
+                    word-tile aspect-square p-1 sm:p-2 font-semibold ${getFontSize(word.text)}
                     transition-all duration-200
                     flex items-center justify-center text-center leading-tight
                     ${
                       isSelected
-                        ? "bg-selected text-selected-foreground scale-95"
-                        : "bg-card hover:bg-hover border border-border"
+                        ? "is-selected scale-[0.98]"
+                        : ""
                     }
                   `}
                 >
@@ -415,26 +432,24 @@ export default function ConnectionsGame() {
 
         {/* Game Controls */}
         {words.length > 0 && !isViewingAnswers && (
-          <div className="space-y-2 sm:space-y-4">
+          <div className="relative z-20 space-y-2 sm:space-y-4">
             <div className="flex items-center justify-center gap-1">
               {[...Array(remainingAttempts)].map((_, i) => (
                 <Heart
                   key={`filled-${i}`}
                   className="w-5 h-5 sm:w-6 sm:h-6 fill-destructive text-destructive"
-                  style={{ imageRendering: 'pixelated' }}
                 />
               ))}
               {[...Array(mistakes)].map((_, i) => (
                 <Heart
                   key={`empty-${i}`}
                   className="w-5 h-5 sm:w-6 sm:h-6 text-muted"
-                  style={{ imageRendering: 'pixelated' }}
                 />
               ))}
             </div>
 
             {!gameWon && !gameLost && (
-              <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 justify-center">
+              <div className="relative z-20 flex flex-col sm:flex-row gap-1 sm:gap-2 justify-center">
                 <Button
                   variant="outline"
                   onClick={() => shuffleWords()}
@@ -446,18 +461,14 @@ export default function ConnectionsGame() {
                 </Button>
                 <Button
                   onClick={submitGuess}
-                  disabled={selectedWords.length !== 4}
                   size="sm"
-                  className="w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm px-2 sm:px-3"
+                  className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3 enabled:border-yellow-300/70 enabled:hover:bg-[hsl(50_100%_97%)] enabled:hover:border-yellow-300 enabled:focus-visible:ring-yellow-300 enabled:active:bg-[hsl(50_100%_92%)] enabled:active:shadow-[0_0_0_1px_rgba(250,204,21,0.45),0_0_24px_rgba(250,204,21,0.55)]"
                 >
-                  <span className="truncate">
-                    Submit {selectedWords.length > 0 && `(${selectedWords.length}/4)`}
-                  </span>
+                  <span className="truncate">Submit</span>
                 </Button>
                 <Button
                   variant="outline"
                   onClick={deselectAll}
-                  disabled={selectedWords.length === 0}
                   size="sm"
                   className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
                 >
