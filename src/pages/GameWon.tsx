@@ -1,4 +1,12 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Share2, Instagram, Copy } from "lucide-react";
 import { buildAchievementMessage, buildWhatsAppShareUrl, buildWhatsAppWebShareUrl, parseSolvedDifficultiesParam } from "@/lib/share";
 import { toast } from "sonner";
@@ -10,6 +18,7 @@ const resultButtonClass =
 
 export default function GameWon() {
   const navigate = useNavigate();
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session');
   const rawScore = searchParams.get("score");
@@ -64,13 +73,9 @@ export default function GameWon() {
             >
               <span className="truncate">View Answers</span>
             </Button>
-            <Button onClick={shareGame} variant="secondary" className={resultButtonClass}>
+            <Button onClick={() => setShareDialogOpen(true)} variant="secondary" className={resultButtonClass}>
               <Share2 className="mr-2 h-4 w-4 shrink-0" />
-              <span className="truncate">Share on WhatsApp</span>
-            </Button>
-            <Button onClick={copyShareMessage} variant="secondary" className={resultButtonClass}>
-              <Copy className="mr-2 h-4 w-4 shrink-0" />
-              <span className="truncate">Copy Share Message</span>
+              <span className="truncate">Share with Friends</span>
             </Button>
             <Button asChild variant="secondary" className={resultButtonClass}>
               <a
@@ -87,6 +92,39 @@ export default function GameWon() {
           </div>
         </div>
       </div>
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Your Result</DialogTitle>
+            <DialogDescription>
+              Choose how you want to share your achievement.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Button
+              onClick={async () => {
+                setShareDialogOpen(false);
+                await shareGame();
+              }}
+              className="justify-start"
+            >
+              <Share2 className="h-4 w-4" />
+              Share on WhatsApp
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                setShareDialogOpen(false);
+                await copyShareMessage();
+              }}
+              className="justify-start"
+            >
+              <Copy className="h-4 w-4" />
+              Copy Share Message
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
