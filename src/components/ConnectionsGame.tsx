@@ -203,18 +203,18 @@ export default function ConnectionsGame() {
   };
 
   const getFontSize = (text: string) => {
-    // Lemon Milk is wider than the previous pixel font, so mobile sizing
-    // needs tighter thresholds to preserve the original "fit inside tile" behavior.
-    const parts = text.split(" ");
-    const longestPart = Math.max(...parts.map((part) => part.length));
-    const compactLength = text.replace(/\s/g, "").length;
+    // Same logic pattern as before: scale by word length.
+    // We use the longest word segment (for multi-word tiles) and only tighten
+    // the mobile sizes because Lemon Milk is wider than the previous font.
+    const wordLength = Math.max(...text.split(" ").map((part) => part.length));
 
-    if (longestPart <= 4 && compactLength <= 8) return "text-lg sm:text-2xl";
-    if (longestPart <= 6 && compactLength <= 10) return "text-base sm:text-xl";
-    if (longestPart <= 8 && compactLength <= 14) return "text-sm sm:text-lg";
-    if (longestPart <= 10 && compactLength <= 18) return "text-xs sm:text-base";
-    if (longestPart <= 12) return "text-[11px] sm:text-sm";
-    return "text-[10px] sm:text-xs";
+    if (wordLength <= 4) return "text-base sm:text-2xl";
+    if (wordLength <= 6) return "text-sm sm:text-xl";
+    if (wordLength <= 8) return "text-xs sm:text-lg";
+    if (wordLength <= 10) return "text-[10px] sm:text-base";
+    if (wordLength <= 12) return "text-[9px] sm:text-sm";
+    if (wordLength <= 14) return "text-[8px] sm:text-xs";
+    return "text-[7px] sm:text-[11px]";
   };
 
   const toggleWord = (wordId: string) => {
@@ -414,7 +414,7 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    word-tile aspect-square p-1 sm:p-2 font-semibold tracking-normal ${getFontSize(word.text)}
+                    word-tile aspect-square p-0.5 sm:p-2 font-semibold tracking-[-0.02em] ${getFontSize(word.text)}
                     transition-all duration-200
                     flex items-center justify-center text-center leading-tight
                     ${
@@ -424,7 +424,7 @@ export default function ConnectionsGame() {
                     }
                   `}
                 >
-                  <span className="max-w-full px-0.5 leading-[1.1] tracking-normal flex flex-col items-center justify-center">
+                  <span className="max-w-full px-0 leading-none tracking-[-0.02em] flex flex-col items-center justify-center">
                     {word.text.split(' ').map((part, idx) => (
                       <span key={idx}>{part}</span>
                     ))}
