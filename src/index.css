@@ -54,8 +54,8 @@ All colors MUST be HSL.
     --category-easy: 51 98% 78%;
     --category-easy-foreground: 235 18% 14%;
     
-    /* Medium: brighter light blue */
-    --category-medium: 212 96% 76%;
+    /* Medium: soft salmon pink */
+    --category-medium: 8 88% 79%;
     --category-medium-foreground: 235 18% 14%;
     
     /* Hard: brighter light olive green */
@@ -67,7 +67,7 @@ All colors MUST be HSL.
     --category-expert-foreground: 235 18% 14%;
 
     /* Interactive states */
-    --selected: 263 76% 91%;
+    --selected: 50 95% 88%;
     --selected-foreground: 235 18% 14%;
     
     --hover: 0 0% 100%;
