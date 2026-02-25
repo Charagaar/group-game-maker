@@ -203,13 +203,18 @@ export default function ConnectionsGame() {
   };
 
   const getFontSize = (text: string) => {
-    const length = text.length;
-    if (length <= 4) return 'text-xl sm:text-2xl';
-    if (length <= 6) return 'text-lg sm:text-xl';
-    if (length <= 9) return 'text-base sm:text-lg';
-    if (length <= 12) return 'text-sm sm:text-base';
-    if (length <= 15) return 'text-xs sm:text-sm';
-    return 'text-[11px] sm:text-xs';
+    // Lemon Milk is wider than the previous pixel font, so mobile sizing
+    // needs tighter thresholds to preserve the original "fit inside tile" behavior.
+    const parts = text.split(" ");
+    const longestPart = Math.max(...parts.map((part) => part.length));
+    const compactLength = text.replace(/\s/g, "").length;
+
+    if (longestPart <= 4 && compactLength <= 8) return "text-lg sm:text-2xl";
+    if (longestPart <= 6 && compactLength <= 10) return "text-base sm:text-xl";
+    if (longestPart <= 8 && compactLength <= 14) return "text-sm sm:text-lg";
+    if (longestPart <= 10 && compactLength <= 18) return "text-xs sm:text-base";
+    if (longestPart <= 12) return "text-[11px] sm:text-sm";
+    return "text-[10px] sm:text-xs";
   };
 
   const toggleWord = (wordId: string) => {
@@ -409,7 +414,7 @@ export default function ConnectionsGame() {
                   key={word.id}
                   onClick={() => toggleWord(word.id)}
                   className={`
-                    word-tile aspect-square p-1 sm:p-2 font-semibold ${getFontSize(word.text)}
+                    word-tile aspect-square p-1 sm:p-2 font-semibold tracking-normal ${getFontSize(word.text)}
                     transition-all duration-200
                     flex items-center justify-center text-center leading-tight
                     ${
@@ -419,7 +424,7 @@ export default function ConnectionsGame() {
                     }
                   `}
                 >
-                  <span className="max-w-full px-0.5 leading-[1.1] flex flex-col items-center justify-center">
+                  <span className="max-w-full px-0.5 leading-[1.1] tracking-normal flex flex-col items-center justify-center">
                     {word.text.split(' ').map((part, idx) => (
                       <span key={idx}>{part}</span>
                     ))}
@@ -449,20 +454,20 @@ export default function ConnectionsGame() {
             </div>
 
             {!gameWon && !gameLost && (
-              <div className="relative z-20 flex flex-col sm:flex-row gap-1 sm:gap-2 justify-center">
+              <div className="relative z-20 flex flex-row gap-1 justify-center items-center">
                 <Button
                   variant="outline"
                   onClick={() => shuffleWords()}
                   size="sm"
-                  className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
+                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
                 >
-                  <Shuffle className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                  <Shuffle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 shrink-0" />
                   <span className="truncate">Shuffle</span>
                 </Button>
                 <Button
                   onClick={submitGuess}
                   size="sm"
-                  className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3 enabled:border-yellow-300/70 enabled:hover:bg-[hsl(50_100%_97%)] enabled:hover:border-yellow-300 enabled:focus-visible:ring-yellow-300 enabled:active:bg-[hsl(50_100%_92%)] enabled:active:shadow-[0_0_0_1px_rgba(250,204,21,0.45),0_0_24px_rgba(250,204,21,0.55)]"
+                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3 enabled:border-yellow-300/70 enabled:hover:bg-[hsl(50_100%_97%)] enabled:hover:border-yellow-300 enabled:focus-visible:ring-yellow-300 enabled:active:bg-[hsl(50_100%_92%)] enabled:active:shadow-[0_0_0_1px_rgba(250,204,21,0.45),0_0_18px_rgba(250,204,21,0.45)]"
                 >
                   <span className="truncate">Submit</span>
                 </Button>
@@ -470,7 +475,7 @@ export default function ConnectionsGame() {
                   variant="outline"
                   onClick={deselectAll}
                   size="sm"
-                  className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-3"
+                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-2.5"
                 >
                   <span className="truncate">Deselect All</span>
                 </Button>
