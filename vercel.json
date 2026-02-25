@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/game/", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/game", "destination": "/" },
     { "source": "/game/(.*)", "destination": "/" }
