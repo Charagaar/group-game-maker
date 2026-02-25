@@ -71,7 +71,7 @@ All colors MUST be HSL.
     --selected-foreground: 235 18% 14%;
     
     --hover: 0 0% 100%;
-    --tile-corner: 269 90% 64%;
+    --tile-corner: 50 95% 78%;
     
     /* Animations */
     --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
