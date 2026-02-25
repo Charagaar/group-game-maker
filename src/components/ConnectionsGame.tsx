@@ -4,6 +4,7 @@ import { Shuffle, Heart } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fingerprintPuzzle, getClientId, startPlay, completePlay } from "@/lib/tracker";
+import { buildSolvedDifficultiesParam, type Difficulty } from "@/lib/share";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 interface Word {
@@ -270,7 +271,8 @@ export default function ConnectionsGame() {
       }
 
       if (categoryData) {
-        setSolvedCategories([...solvedCategories, categoryData]);
+        const nextSolvedCategories = [...solvedCategories, categoryData];
+        setSolvedCategories(nextSolvedCategories);
         setWords(words.filter((w) => !selectedWords.includes(w.id)));
         setSelectedWords([]);
         toast.success("Yay!");
@@ -302,7 +304,10 @@ export default function ConnectionsGame() {
           } catch {}
           
           // Navigate to game won page with session info
-          navigate(`/game-won?session=${sessionId}`);
+          const solvedParam = buildSolvedDifficultiesParam(
+            nextSolvedCategories.map((category) => category.difficulty as Difficulty)
+          );
+          navigate(`/game-won?session=${sessionId}&score=4&solved=${solvedParam}`);
         }
       }
     } else {
@@ -349,7 +354,10 @@ export default function ConnectionsGame() {
         } catch {}
         
         // Navigate to game over page with session info
-        navigate(`/game-over?session=${sessionId}`);
+        const solvedParam = buildSolvedDifficultiesParam(
+          solvedCategories.map((category) => category.difficulty as Difficulty)
+        );
+        navigate(`/game-over?session=${sessionId}&score=${solvedCategories.length}&solved=${solvedParam}`);
       }
     }
   };
@@ -357,8 +365,8 @@ export default function ConnectionsGame() {
   const remainingAttempts = Math.max(0, 4 - mistakes);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen p-1 sm:p-4 bg-background">
-      <div className="w-full max-w-2xl space-y-2 sm:space-y-6">
+    <div className="flex min-h-screen min-h-[100svh] flex-col items-center justify-center bg-background px-1 py-2 sm:px-4 sm:py-4">
+      <div className="mx-auto w-full max-w-2xl space-y-2 sm:space-y-6">
         {/* Header */}
         <div className="text-center space-y-0.5 sm:space-y-2">
           <div className="relative inline-flex items-center justify-center">
