@@ -7,7 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Share2, Instagram, Copy } from "lucide-react";
+import { Share2, Instagram, Copy, Globe } from "lucide-react";
 import { buildAchievementMessage, buildWhatsAppShareUrl, buildWhatsAppWebShareUrl, parseSolvedDifficultiesParam } from "@/lib/share";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -124,6 +124,18 @@ export default function GameWon() {
               >
                 <Instagram className="mr-2 h-4 w-4 shrink-0" />
                 <span className="truncate">About Us</span>
+              </a>
+            </Button>
+            <Button asChild variant="secondary" className={resultButtonClass}>
+              <a
+                href={ABOUT_US_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Go back to website"
+                className="flex items-center"
+              >
+                <Globe className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">Go back to website</span>
               </a>
             </Button>
           </div>
