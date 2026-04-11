@@ -7,8 +7,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { fingerprintPuzzle, getClientId, startPlay, completePlay } from "@/lib/tracker";
 import { buildSolvedDifficultiesParam, type Difficulty } from "@/lib/share";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { DEFAULT_HINTS, extractHintsFromRows, readHintsFromStorage, resolveHints, writeHintsToStorage } from "@/lib/hints";
-import { extractFactFromRows, readFactFromStorage, resolveFact } from "@/lib/fact";
+import { DEFAULT_HINTS, extractHintsFromRows, resolveHints, writeHintsToStorage } from "@/lib/hints";
+import { extractFactFromRows, resolveFact } from "@/lib/fact";
 
 interface Word {
   id: string;
@@ -219,12 +219,12 @@ export default function ConnectionsGame() {
     setIsHintOpen(false);
 
     const dbHints = extractHintsFromRows(gameData as unknown as Array<Record<string, unknown>>);
-    const finalHints = resolveHints(dbHints, readHintsFromStorage());
+    const finalHints = resolveHints(dbHints);
     setHint1(finalHints.hint1);
     setHint2(finalHints.hint2);
     writeHintsToStorage(finalHints);
     const dbFact = extractFactFromRows(gameData as unknown as Array<Record<string, unknown>>);
-    setPuzzleFact(resolveFact(dbFact, readFactFromStorage()));
+    setPuzzleFact(resolveFact(dbFact));
   };
 
   const shuffleWords = (wordsToShuffle: Word[] = words) => {

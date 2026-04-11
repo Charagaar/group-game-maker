@@ -11,7 +11,7 @@ import { Share2, Instagram, Copy } from "lucide-react";
 import { buildAchievementMessage, buildWhatsAppShareUrl, buildWhatsAppWebShareUrl, parseSolvedDifficultiesParam } from "@/lib/share";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { extractFactFromRows, readFactFromStorage, resolveFact, writeFactToStorage } from "@/lib/fact";
+import { extractFactFromRows, resolveFact, writeFactToStorage } from "@/lib/fact";
 import { supabase } from "@/integrations/supabase/client";
 
 const ABOUT_US_URL = "https://www.un-mapped.com";
@@ -28,7 +28,7 @@ export default function GameWon() {
   const score = Number.isFinite(parsedScore) ? parsedScore : 4;
   const solvedDifficulties = parseSolvedDifficultiesParam(searchParams.get("solved"));
   const [puzzleFact, setPuzzleFact] = useState(() =>
-    resolveFact(searchParams.get("fact"), readFactFromStorage())
+    resolveFact(searchParams.get("fact"))
   );
   const shareMessage = buildAchievementMessage(
     score,

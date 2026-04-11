@@ -4,8 +4,8 @@ export interface PuzzleHints {
 }
 
 export const DEFAULT_HINTS: PuzzleHints = {
-  hint1: "Do some research",
-  hint2: "Think deeply",
+  hint1: "they have Sovereign land in the city",
+  hint2: "These cities have a 'Familial' relationship",
 };
 
 export const HINTS_STORAGE_KEY = "unmap:puzzle-hints";

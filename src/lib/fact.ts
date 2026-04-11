@@ -1,4 +1,6 @@
 export const FACT_STORAGE_KEY = "unmap:puzzle-fact";
+export const DEFAULT_PUZZLE_FACT =
+  "Bangalore has a Minsk square, and Minsk has a 'Bangalore square' to celebrate the long-standing relationship between the two cities";
 
 const normalizeValue = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";
@@ -46,5 +48,5 @@ export const resolveFact = (...candidates: Array<string | null | undefined>): st
     if (fact.length > 0) return fact;
   }
 
-  return "";
+  return DEFAULT_PUZZLE_FACT;
 };
