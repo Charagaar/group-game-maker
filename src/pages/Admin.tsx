@@ -137,7 +137,7 @@ export default function Admin() {
     writeHintsToStorage(normalizedHints);
     writeFactToStorage(normalizedFact);
 
-    const saveWithHints = async () => {
+    const saveWithHintsAndFact = async () => {
       for (let index = 0; index < categories.length; index += 1) {
         const cat = categories[index];
         const payload = {
@@ -148,6 +148,30 @@ export default function Admin() {
           hint_1: normalizedHints.hint1,
           hint_2: normalizedHints.hint2,
           puzzle_fact: normalizedFact,
+        };
+
+        if (cat.id) {
+          const { error } = await supabase.from("game_categories").update(payload).eq("id", cat.id);
+          if (error) return error;
+        } else {
+          const { error } = await supabase.from("game_categories").insert(payload);
+          if (error) return error;
+        }
+      }
+
+      return null;
+    };
+
+    const saveWithHintsOnly = async () => {
+      for (let index = 0; index < categories.length; index += 1) {
+        const cat = categories[index];
+        const payload = {
+          name: cat.name,
+          difficulty: cat.difficulty,
+          words: cat.words,
+          display_order: index + 1,
+          hint_1: normalizedHints.hint1,
+          hint_2: normalizedHints.hint2,
         };
 
         if (cat.id) {
@@ -192,9 +216,15 @@ export default function Admin() {
       return { error: null, nextCategories };
     };
 
-    const withHintsError = await saveWithHints();
-    if (!withHintsError) {
+    const withHintsAndFactError = await saveWithHintsAndFact();
+    if (!withHintsAndFactError) {
       toast.success("Game data saved!");
+      return;
+    }
+
+    const withHintsOnlyError = await saveWithHintsOnly();
+    if (!withHintsOnlyError) {
+      toast.success("Game data and hints saved. Fact is stored locally on this device until DB migration is applied.");
       return;
     }
 
