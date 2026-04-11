@@ -95,6 +95,7 @@ export default function ConnectionsGame() {
   const viewMode = searchParams.get('view');
   const isViewingAnswers = viewMode === 'answers';
   const resultType = searchParams.get('result'); // 'won' or 'lost'
+  const resultSessionId = searchParams.get("session");
   const resultFact = searchParams.get("fact");
 
   useEffect(() => {
@@ -555,7 +556,7 @@ export default function ConnectionsGame() {
             <Button
               onClick={() => {
                 const resultParams = new URLSearchParams();
-                if (sessionId) resultParams.set("session", sessionId);
+                if (resultSessionId) resultParams.set("session", resultSessionId);
                 if (resultFact) resultParams.set("fact", resultFact);
                 navigate(resultType === "won" ? `/game-won?${resultParams.toString()}` : `/game-over?${resultParams.toString()}`);
               }}

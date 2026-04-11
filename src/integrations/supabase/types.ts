@@ -23,6 +23,7 @@ export type Database = {
           hint_2: string
           id: string
           name: string
+          puzzle_fact: string
           updated_at: string
           words: string[]
         }
@@ -34,6 +35,7 @@ export type Database = {
           hint_2?: string
           id?: string
           name: string
+          puzzle_fact?: string
           updated_at?: string
           words: string[]
         }
@@ -45,6 +47,7 @@ export type Database = {
           hint_2?: string
           id?: string
           name?: string
+          puzzle_fact?: string
           updated_at?: string
           words?: string[]
         }

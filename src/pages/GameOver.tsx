@@ -11,6 +11,7 @@ import { Share2, Instagram, Copy } from "lucide-react";
 import { buildAchievementMessage, buildWhatsAppShareUrl, buildWhatsAppWebShareUrl, parseSolvedDifficultiesParam } from "@/lib/share";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { readFactFromStorage, resolveFact } from "@/lib/fact";
 
 const ABOUT_US_URL = "https://www.un-mapped.com";
 const resultButtonClass =
@@ -25,6 +26,7 @@ export default function GameOver() {
   const parsedScore = rawScore ? Number(rawScore) : NaN;
   const score = Number.isFinite(parsedScore) ? parsedScore : 0;
   const solvedDifficulties = parseSolvedDifficultiesParam(searchParams.get("solved"));
+  const puzzleFact = resolveFact(searchParams.get("fact"), readFactFromStorage());
   const shareMessage = buildAchievementMessage(score, solvedDifficulties);
 
   const copyShareMessage = async () => {
@@ -64,7 +66,14 @@ export default function GameOver() {
           </p>
           <div className="mx-auto flex w-full max-w-md flex-col gap-2">
             <Button 
-              onClick={() => navigate(`/?view=answers&result=lost${sessionId ? `&session=${sessionId}` : ''}`)} 
+              onClick={() => {
+                const params = new URLSearchParams();
+                params.set("view", "answers");
+                params.set("result", "lost");
+                if (sessionId) params.set("session", sessionId);
+                if (puzzleFact) params.set("fact", puzzleFact);
+                navigate(`/?${params.toString()}`);
+              }} 
               variant="secondary" 
               className={resultButtonClass}
             >
@@ -87,6 +96,12 @@ export default function GameOver() {
               </a>
             </Button>
           </div>
+          {puzzleFact ? (
+            <div className="mx-auto mt-6 w-full max-w-2xl rounded-lg border border-border/60 bg-muted/40 px-4 py-3 text-left">
+              <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Did you know?</p>
+              <p className="mt-1 text-sm sm:text-base leading-relaxed">{puzzleFact}</p>
+            </div>
+          ) : null}
         </div>
       </div>
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
