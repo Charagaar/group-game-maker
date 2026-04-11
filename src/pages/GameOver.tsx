@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,7 +11,8 @@ import { Share2, Instagram, Copy } from "lucide-react";
 import { buildAchievementMessage, buildWhatsAppShareUrl, buildWhatsAppWebShareUrl, parseSolvedDifficultiesParam } from "@/lib/share";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { readFactFromStorage, resolveFact } from "@/lib/fact";
+import { extractFactFromRows, readFactFromStorage, resolveFact, writeFactToStorage } from "@/lib/fact";
+import { supabase } from "@/integrations/supabase/client";
 
 const ABOUT_US_URL = "https://www.un-mapped.com";
 const resultButtonClass =
@@ -26,8 +27,35 @@ export default function GameOver() {
   const parsedScore = rawScore ? Number(rawScore) : NaN;
   const score = Number.isFinite(parsedScore) ? parsedScore : 0;
   const solvedDifficulties = parseSolvedDifficultiesParam(searchParams.get("solved"));
-  const puzzleFact = resolveFact(searchParams.get("fact"), readFactFromStorage());
+  const [puzzleFact, setPuzzleFact] = useState(() =>
+    resolveFact(searchParams.get("fact"), readFactFromStorage())
+  );
   const shareMessage = buildAchievementMessage(score, solvedDifficulties);
+
+  useEffect(() => {
+    if (puzzleFact) return;
+
+    let isActive = true;
+    const loadFact = async () => {
+      const { data, error } = await supabase
+        .from("game_categories")
+        .select("puzzle_fact")
+        .order("display_order");
+
+      if (error || !data || !isActive) return;
+
+      const dbFact = extractFactFromRows(data as unknown as Array<Record<string, unknown>>);
+      if (!dbFact) return;
+
+      writeFactToStorage(dbFact);
+      if (isActive) setPuzzleFact(dbFact);
+    };
+
+    loadFact();
+    return () => {
+      isActive = false;
+    };
+  }, [puzzleFact]);
 
   const copyShareMessage = async () => {
     try {
