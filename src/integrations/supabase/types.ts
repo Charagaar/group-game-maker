@@ -19,6 +19,8 @@ export type Database = {
           created_at: string
           difficulty: string
           display_order: number
+          hint_1: string
+          hint_2: string
           id: string
           name: string
           updated_at: string
@@ -28,6 +30,8 @@ export type Database = {
           created_at?: string
           difficulty: string
           display_order: number
+          hint_1?: string
+          hint_2?: string
           id?: string
           name: string
           updated_at?: string
@@ -37,6 +41,8 @@ export type Database = {
           created_at?: string
           difficulty?: string
           display_order?: number
+          hint_1?: string
+          hint_2?: string
           id?: string
           name?: string
           updated_at?: string

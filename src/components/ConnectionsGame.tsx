@@ -1,11 +1,14 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle, Heart } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Shuffle, Heart, CircleHelp } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fingerprintPuzzle, getClientId, startPlay, completePlay } from "@/lib/tracker";
 import { buildSolvedDifficultiesParam, type Difficulty } from "@/lib/share";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { DEFAULT_HINTS, extractHintsFromRows, readHintsFromStorage, resolveHints } from "@/lib/hints";
+import { extractFactFromRows, readFactFromStorage, resolveFact } from "@/lib/fact";
 
 interface Word {
   id: string;
@@ -18,6 +21,9 @@ interface Category {
   name: string;
   difficulty: "easy" | "medium" | "hard" | "expert";
   words: string[];
+  hint1?: string;
+  hint2?: string;
+  puzzleFact?: string;
 }
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "unknown";
@@ -79,11 +85,17 @@ export default function ConnectionsGame() {
   const [gameLost, setGameLost] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [puzzleId, setPuzzleId] = useState<string | null>(null);
+  const [hint1, setHint1] = useState(DEFAULT_HINTS.hint1);
+  const [hint2, setHint2] = useState(DEFAULT_HINTS.hint2);
+  const [puzzleFact, setPuzzleFact] = useState("");
+  const [isHintOpen, setIsHintOpen] = useState(false);
+  const [currentHintIndex, setCurrentHintIndex] = useState<0 | 1>(0);
   
   // Check if we're in "view answers" mode
   const viewMode = searchParams.get('view');
   const isViewingAnswers = viewMode === 'answers';
   const resultType = searchParams.get('result'); // 'won' or 'lost'
+  const resultFact = searchParams.get("fact");
 
   useEffect(() => {
     if (isViewingAnswers) return; // Skip game init when viewing answers
@@ -109,6 +121,9 @@ export default function ConnectionsGame() {
               name: cat.name,
               difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
               words: cat.words,
+              hint1: cat.hint_1?.trim() || undefined,
+              hint2: cat.hint_2?.trim() || undefined,
+              puzzleFact: cat.puzzle_fact?.trim() || undefined,
             }));
           }
         } catch (err) {
@@ -145,6 +160,9 @@ export default function ConnectionsGame() {
           name: cat.name,
           difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
           words: cat.words,
+          hint1: cat.hint_1?.trim() || undefined,
+          hint2: cat.hint_2?.trim() || undefined,
+          puzzleFact: cat.puzzle_fact?.trim() || undefined,
         }));
       } else {
         console.warn("No game data in database, using fallback");
@@ -196,6 +214,15 @@ export default function ConnectionsGame() {
     setMistakes(0);
     setGameWon(false);
     setGameLost(false);
+    setCurrentHintIndex(0);
+    setIsHintOpen(false);
+
+    const dbHints = extractHintsFromRows(gameData as unknown as Array<Record<string, unknown>>);
+    const finalHints = resolveHints(readHintsFromStorage(), dbHints);
+    setHint1(finalHints.hint1);
+    setHint2(finalHints.hint2);
+    const dbFact = extractFactFromRows(gameData as unknown as Array<Record<string, unknown>>);
+    setPuzzleFact(resolveFact(dbFact, readFactFromStorage()));
   };
 
   const shuffleWords = (wordsToShuffle: Word[] = words) => {
@@ -307,7 +334,12 @@ export default function ConnectionsGame() {
           const solvedParam = buildSolvedDifficultiesParam(
             nextSolvedCategories.map((category) => category.difficulty as Difficulty)
           );
-          navigate(`/game-won?session=${sessionId}&score=4&solved=${solvedParam}`);
+          const winParams = new URLSearchParams();
+          if (sessionId) winParams.set("session", sessionId);
+          winParams.set("score", "4");
+          winParams.set("solved", solvedParam);
+          if (puzzleFact) winParams.set("fact", puzzleFact);
+          navigate(`/game-won?${winParams.toString()}`);
         }
       }
     } else {
@@ -357,15 +389,40 @@ export default function ConnectionsGame() {
         const solvedParam = buildSolvedDifficultiesParam(
           solvedCategories.map((category) => category.difficulty as Difficulty)
         );
-        navigate(`/game-over?session=${sessionId}&score=${solvedCategories.length}&solved=${solvedParam}`);
+        const lossParams = new URLSearchParams();
+        if (sessionId) lossParams.set("session", sessionId);
+        lossParams.set("score", String(solvedCategories.length));
+        lossParams.set("solved", solvedParam);
+        if (puzzleFact) lossParams.set("fact", puzzleFact);
+        navigate(`/game-over?${lossParams.toString()}`);
       }
     }
   };
 
   const remainingAttempts = Math.max(0, 4 - mistakes);
+  const currentHint = currentHintIndex === 0 ? hint1 : hint2;
+
+  const toggleHint = () => {
+    setCurrentHintIndex((prev) => (prev === 0 ? 1 : 0));
+  };
 
   return (
-    <div className="flex min-h-screen min-h-[100svh] flex-col items-center justify-center bg-background px-1 py-2 sm:px-4 sm:py-4">
+    <div className="relative flex min-h-screen min-h-[100svh] flex-col items-center justify-center bg-background px-1 py-2 sm:px-4 sm:py-4">
+      {!isViewingAnswers && words.length > 0 && !gameWon && !gameLost && (
+        <div className="absolute right-2 top-2 z-30 sm:right-4 sm:top-4">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Open hints"
+            onClick={() => setIsHintOpen(true)}
+            className="h-9 w-9 rounded-full"
+          >
+            <CircleHelp className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       <div className="mx-auto w-full max-w-2xl space-y-2 sm:space-y-6">
         {/* Header */}
         <div className="text-center space-y-0.5 sm:space-y-2">
@@ -496,7 +553,12 @@ export default function ConnectionsGame() {
         {isViewingAnswers && (
           <div className="flex justify-center">
             <Button
-              onClick={() => navigate(resultType === 'won' ? `/game-won?session=${sessionId}` : `/game-over?session=${sessionId}`)}
+              onClick={() => {
+                const resultParams = new URLSearchParams();
+                if (sessionId) resultParams.set("session", sessionId);
+                if (resultFact) resultParams.set("fact", resultFact);
+                navigate(resultType === "won" ? `/game-won?${resultParams.toString()}` : `/game-over?${resultParams.toString()}`);
+              }}
               variant="outline"
               size="lg"
               className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 hover:bg-category-easy hover:text-category-easy-foreground active:bg-category-easy active:text-category-easy-foreground"
@@ -506,6 +568,28 @@ export default function ConnectionsGame() {
           </div>
         )}
       </div>
+
+      <Dialog open={isHintOpen} onOpenChange={setIsHintOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Need a hint?</DialogTitle>
+            <DialogDescription>You have two hints.</DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border bg-muted/30 p-4 text-sm leading-relaxed">
+            {currentHint}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={toggleHint}>
+              Refresh Hint
+            </Button>
+            <Button type="button" onClick={() => setIsHintOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -2,21 +2,32 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  extractHintsFromRows,
+  resolveHints,
+  type PuzzleHints,
+  readHintsFromStorage,
+  writeHintsToStorage,
+} from "@/lib/hints";
+import { extractFactFromRows, readFactFromStorage, resolveFact, writeFactToStorage } from "@/lib/fact";
 
 interface Category {
+  id?: string;
   name: string;
   difficulty: "easy" | "medium" | "hard" | "expert";
   words: string[];
 }
 
-
 export default function Admin() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [hints, setHints] = useState<PuzzleHints>({ hint1: "", hint2: "" });
+  const [fact, setFact] = useState("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,8 +93,15 @@ export default function Admin() {
           words: emptyWords,
         }))
       );
+      setHints(resolveHints(readHintsFromStorage()));
+      setFact(readFactFromStorage());
       return;
     }
+
+    const dbHints = extractHintsFromRows(data as unknown as Array<Record<string, unknown>>);
+    setHints(resolveHints(dbHints, readHintsFromStorage()));
+    const dbFact = extractFactFromRows(data as unknown as Array<Record<string, unknown>>);
+    setFact(resolveFact(dbFact, readFactFromStorage()));
 
     // Normalize to exactly one category per difficulty in a fixed order
     const normalizedCategories: Category[] = difficulties.map((difficulty) => {
@@ -94,6 +112,7 @@ export default function Admin() {
       if (candidates.length > 0) {
         const picked = candidates[0];
         return {
+          id: picked.id,
           name: picked.name,
           difficulty: picked.difficulty as Category["difficulty"],
           words: Array.isArray(picked.words) && picked.words.length > 0 ? picked.words : emptyWords,
@@ -110,33 +129,83 @@ export default function Admin() {
     setCategories(normalizedCategories);
   };
   const saveData = async () => {
-    const { error } = await supabase
-      .from("game_categories")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
+    const normalizedHints = {
+      hint1: hints.hint1.trim(),
+      hint2: hints.hint2.trim(),
+    };
+    const normalizedFact = fact.trim();
+    writeHintsToStorage(normalizedHints);
+    writeFactToStorage(normalizedFact);
 
-    if (error) {
-      toast.error("Failed to clear old data");
+    const saveWithHints = async () => {
+      for (let index = 0; index < categories.length; index += 1) {
+        const cat = categories[index];
+        const payload = {
+          name: cat.name,
+          difficulty: cat.difficulty,
+          words: cat.words,
+          display_order: index + 1,
+          hint_1: normalizedHints.hint1,
+          hint_2: normalizedHints.hint2,
+          puzzle_fact: normalizedFact,
+        };
+
+        if (cat.id) {
+          const { error } = await supabase.from("game_categories").update(payload).eq("id", cat.id);
+          if (error) return error;
+        } else {
+          const { error } = await supabase.from("game_categories").insert(payload);
+          if (error) return error;
+        }
+      }
+
+      return null;
+    };
+
+    const saveWithoutHints = async () => {
+      const nextCategories: Category[] = [...categories];
+      for (let index = 0; index < categories.length; index += 1) {
+        const cat = categories[index];
+        const payload = {
+          name: cat.name,
+          difficulty: cat.difficulty,
+          words: cat.words,
+          display_order: index + 1,
+        };
+
+        if (cat.id) {
+          const { error } = await supabase.from("game_categories").update(payload).eq("id", cat.id);
+          if (error) return { error, nextCategories };
+        } else {
+          const { data, error } = await supabase
+            .from("game_categories")
+            .insert(payload)
+            .select("id")
+            .single();
+          if (error) return { error, nextCategories };
+          if (data?.id) {
+            nextCategories[index] = { ...cat, id: data.id };
+          }
+        }
+      }
+
+      return { error: null, nextCategories };
+    };
+
+    const withHintsError = await saveWithHints();
+    if (!withHintsError) {
+      toast.success("Game data saved!");
       return;
     }
 
-    const dataToInsert = categories.map((cat, index) => ({
-      name: cat.name,
-      difficulty: cat.difficulty,
-      words: cat.words,
-      display_order: index + 1
-    }));
-
-    const { error: insertError } = await supabase
-      .from("game_categories")
-      .insert(dataToInsert);
-
-    if (insertError) {
-      toast.error("Failed to save categories");
+    const fallbackResult = await saveWithoutHints();
+    if (fallbackResult.error) {
+      toast.error(`Failed to save categories: ${fallbackResult.error.message}`);
       return;
     }
 
-    toast.success("Game data saved!");
+    setCategories(fallbackResult.nextCategories);
+    toast.success("Game data saved! Hints and fact are saved locally on this device until DB migration is applied.");
   };
 
   const handleLogout = async () => {
@@ -190,6 +259,42 @@ export default function Admin() {
         </div>
 
         <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Puzzle Hints</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="hint-1">Hint 1</Label>
+                <Textarea
+                  id="hint-1"
+                  value={hints.hint1}
+                  onChange={(e) => setHints((prev) => ({ ...prev, hint1: e.target.value }))}
+                  className="mt-2 min-h-[72px]"
+                />
+              </div>
+              <div>
+                <Label htmlFor="hint-2">Hint 2</Label>
+                <Textarea
+                  id="hint-2"
+                  value={hints.hint2}
+                  onChange={(e) => setHints((prev) => ({ ...prev, hint2: e.target.value }))}
+                  className="mt-2 min-h-[72px]"
+                />
+              </div>
+              <div>
+                <Label htmlFor="puzzle-fact">Post-Game Fact</Label>
+                <Textarea
+                  id="puzzle-fact"
+                  value={fact}
+                  onChange={(e) => setFact(e.target.value)}
+                  placeholder="One educational fact shown after win/loss"
+                  className="mt-2 min-h-[72px]"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {categories.map((category, categoryIndex) => (
             <Card key={categoryIndex}>
               <CardHeader>
