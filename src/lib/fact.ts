@@ -1,6 +1,6 @@
 export const FACT_STORAGE_KEY = "unmap:puzzle-fact";
 export const DEFAULT_PUZZLE_FACT =
-  "Bangalore has a Minsk square, and Minsk has a 'Bangalore square' to celebrate the long-standing relationship between the two cities";
+  "In 1959, during his five-week tour to India, Martin Luther King visited the Indian Institute of World Culture to deliver a speech.";
 
 const normalizeValue = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";

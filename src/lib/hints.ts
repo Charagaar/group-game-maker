@@ -4,8 +4,8 @@ export interface PuzzleHints {
 }
 
 export const DEFAULT_HINTS: PuzzleHints = {
-  hint1: "they have Sovereign land in the city",
-  hint2: "These cities have a 'Familial' relationship",
+  hint1: "these places have a collection of artifacts",
+  hint2: "you have to climb them to get to the top",
 };
 
 export const HINTS_STORAGE_KEY = "unmap:puzzle-hints";
