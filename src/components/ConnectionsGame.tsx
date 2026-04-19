@@ -26,6 +26,16 @@ interface Category {
   puzzleFact?: string;
 }
 
+type GameCategoryRow = {
+  name: string;
+  difficulty: "easy" | "medium" | "hard" | "expert";
+  words: string[];
+  display_order: number | null;
+  hint_1?: string | null;
+  hint_2?: string | null;
+  puzzle_fact?: string | null;
+};
+
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "unknown";
 
 // Fallback game data if database is empty
@@ -64,6 +74,39 @@ const difficultyOrder: Record<"easy" | "medium" | "hard" | "expert", number> = {
   medium: 2,
   hard: 3,
   expert: 4,
+};
+
+const DIFFICULTIES: Array<"easy" | "medium" | "hard" | "expert"> = ["easy", "medium", "hard", "expert"];
+
+const normalizeGameCategories = (rows: GameCategoryRow[]): Category[] => {
+  if (!rows.length) return FALLBACK_GAME_DATA;
+
+  const sorted = [...rows].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+  // Keep at most one row per difficulty to avoid duplicate board tiles from stale DB rows.
+  const firstRowByDifficulty = new Map<"easy" | "medium" | "hard" | "expert", GameCategoryRow>();
+  sorted.forEach((row) => {
+    if (!DIFFICULTIES.includes(row.difficulty)) return;
+    if (!firstRowByDifficulty.has(row.difficulty)) {
+      firstRowByDifficulty.set(row.difficulty, row);
+    }
+  });
+
+  return DIFFICULTIES.map((difficulty) => {
+    const picked = firstRowByDifficulty.get(difficulty);
+    if (!picked) {
+      return FALLBACK_GAME_DATA.find((cat) => cat.difficulty === difficulty)!;
+    }
+
+    return {
+      name: picked.name,
+      difficulty: picked.difficulty,
+      words: Array.isArray(picked.words) ? picked.words : [],
+      hint1: picked.hint_1?.trim() || undefined,
+      hint2: picked.hint_2?.trim() || undefined,
+      puzzleFact: picked.puzzle_fact?.trim() || undefined,
+    };
+  });
 };
 
 const getClientIdSafe = () => {
@@ -118,14 +161,7 @@ export default function ConnectionsGame() {
           if (error) {
             console.error("Failed to load game data:", error);
           } else if (data && data.length > 0) {
-            gameData = data.map(cat => ({
-              name: cat.name,
-              difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
-              words: cat.words,
-              hint1: cat.hint_1?.trim() || undefined,
-              hint2: cat.hint_2?.trim() || undefined,
-              puzzleFact: cat.puzzle_fact?.trim() || undefined,
-            }));
+            gameData = normalizeGameCategories(data as unknown as GameCategoryRow[]);
           }
         } catch (err) {
           console.error("Error loading game data:", err);
@@ -156,15 +192,8 @@ export default function ConnectionsGame() {
       if (error) {
         console.error("Failed to load game data from database:", error);
       } else if (data && data.length > 0) {
-        // Convert database format to Category format
-        gameData = data.map(cat => ({
-          name: cat.name,
-          difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
-          words: cat.words,
-          hint1: cat.hint_1?.trim() || undefined,
-          hint2: cat.hint_2?.trim() || undefined,
-          puzzleFact: cat.puzzle_fact?.trim() || undefined,
-        }));
+        // Normalize DB rows to one category per difficulty.
+        gameData = normalizeGameCategories(data as unknown as GameCategoryRow[]);
       } else {
         console.warn("No game data in database, using fallback");
       }
@@ -180,10 +209,10 @@ export default function ConnectionsGame() {
     setPuzzleId(computedPuzzleId);
 
     const allWords: Word[] = [];
-    gameData.forEach((category) => {
-      category.words.forEach((word: string) => {
+    gameData.forEach((category, categoryIndex) => {
+      category.words.forEach((word: string, wordIndex: number) => {
         allWords.push({
-          id: `${category.name}-${word}`,
+          id: `${category.difficulty}-${categoryIndex}-${wordIndex}`,
           text: word,
           category: category.name,
           difficulty: category.difficulty as "easy" | "medium" | "hard" | "expert",
@@ -402,6 +431,8 @@ export default function ConnectionsGame() {
   };
 
   const remainingAttempts = Math.max(0, 4 - mistakes);
+  const controlButtonPressClass =
+    "border-[hsl(var(--primary)/0.25)] bg-white text-black hover:bg-white hover:text-black active:border-yellow-300 active:bg-white active:text-black active:shadow-[0_0_0_1px_rgba(250,204,21,0.55),0_0_16px_rgba(250,204,21,0.45)]";
   const currentHint = currentHintIndex === 0 ? hint1 : hint2;
 
   const toggleHint = () => {
@@ -526,15 +557,16 @@ export default function ConnectionsGame() {
                   variant="outline"
                   onClick={() => shuffleWords()}
                   size="sm"
-                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
+                  className={`min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3 ${controlButtonPressClass}`}
                 >
                   <Shuffle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 shrink-0" />
                   <span className="truncate">Shuffle</span>
                 </Button>
                 <Button
+                  variant="outline"
                   onClick={submitGuess}
                   size="sm"
-                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3 enabled:border-yellow-300/70 enabled:hover:bg-[hsl(50_100%_97%)] enabled:hover:border-yellow-300 enabled:focus-visible:ring-yellow-300 enabled:active:bg-[hsl(50_100%_92%)] enabled:active:shadow-[0_0_0_1px_rgba(250,204,21,0.45),0_0_18px_rgba(250,204,21,0.45)]"
+                  className={`min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3 ${controlButtonPressClass}`}
                 >
                   <span className="truncate">Submit</span>
                 </Button>
@@ -542,7 +574,7 @@ export default function ConnectionsGame() {
                   variant="outline"
                   onClick={deselectAll}
                   size="sm"
-                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-2.5"
+                  className={`min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-2.5 ${controlButtonPressClass}`}
                 >
                   <span className="truncate">Deselect All</span>
                 </Button>
@@ -578,12 +610,17 @@ export default function ConnectionsGame() {
             <DialogDescription>You have two hints.</DialogDescription>
           </DialogHeader>
 
-          <div className="rounded-lg border bg-muted/30 p-4 text-sm leading-relaxed">
+          <div className="rounded-lg border border-white/40 bg-white/20 p-4 text-sm leading-relaxed text-white backdrop-blur-sm">
             {currentHint}
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={toggleHint}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={toggleHint}
+              className={controlButtonPressClass}
+            >
               Refresh Hint
             </Button>
             <Button type="button" onClick={() => setIsHintOpen(false)}>
