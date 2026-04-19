@@ -4,8 +4,8 @@ export interface PuzzleHints {
 }
 
 export const DEFAULT_HINTS: PuzzleHints = {
-  hint1: "these places have a collection of artifacts",
-  hint2: "you have to climb them to get to the top",
+  hint1: "They signify the boundary of KempeGowda's Bengaluru.",
+  hint2: "Land Reclaimed.",
 };
 
 export const HINTS_STORAGE_KEY = "unmap:puzzle-hints";

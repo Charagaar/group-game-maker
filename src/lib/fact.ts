@@ -1,6 +1,6 @@
 export const FACT_STORAGE_KEY = "unmap:puzzle-fact";
 export const DEFAULT_PUZZLE_FACT =
-  "In 1959, during his five-week tour to India, Martin Luther King visited the Indian Institute of World Culture to deliver a speech.";
+  "The Rain tree is originally from South America. It was first introduced to Sri Lanka by the British and then travelled to India.";
 
 const normalizeValue = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";
