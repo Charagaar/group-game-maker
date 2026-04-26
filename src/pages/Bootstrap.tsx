@@ -1,40 +1,52 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Bootstrap() {
   const [loading, setLoading] = useState(false);
+  const [currentEmail, setCurrentEmail] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const createAdmin = async () => {
+  useEffect(() => {
+    const loadSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setCurrentEmail(data.session?.user.email ?? null);
+    };
+
+    loadSession();
+  }, []);
+
+  const grantCurrentUserAdmin = async () => {
     setLoading(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bootstrap-admin`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create admin');
+      const email = session?.user?.email ?? null;
+      if (!session || !email) {
+        toast.error("Please sign in first, then return here to grant admin access.");
+        navigate("/auth");
+        return;
       }
 
-      toast.success('Admin account created successfully!');
-      toast.info('Email: unmapped.blr@gmail.com | Password: Unmap2025blr');
-      
+      const { error } = await supabase.rpc("grant_admin_to_user", {
+        _email: email,
+      });
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Admin role granted. Redirecting to admin panel...");
       setTimeout(() => {
-        navigate('/auth');
+        navigate("/admin");
       }, 2000);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create admin account');
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Failed to grant admin role";
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -46,27 +58,30 @@ export default function Bootstrap() {
         <CardHeader>
           <CardTitle>Bootstrap Admin</CardTitle>
           <CardDescription>
-            Create the first admin account for your application
+            Grant admin role to the currently signed-in account
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2 text-sm">
-            <p><strong>Email:</strong> unmapped.blr@gmail.com</p>
-            <p><strong>Password:</strong> Unmap2025blr</p>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>1. Sign up or log in at /auth.</p>
+            <p>2. Return here and click the button below.</p>
+            <p>
+              Signed in as: <strong>{currentEmail ?? "No active session"}</strong>
+            </p>
           </div>
-          <Button 
-            onClick={createAdmin} 
-            className="w-full" 
+          <Button
+            onClick={grantCurrentUserAdmin}
+            className="w-full"
             disabled={loading}
           >
-            {loading ? "Creating Admin Account..." : "Create Admin Account"}
+            {loading ? "Granting Admin Role..." : "Grant Admin To Current User"}
           </Button>
           <Button
             variant="outline"
-            onClick={() => navigate('/auth')}
+            onClick={() => navigate("/auth")}
             className="w-full"
           >
-            Go to Login
+            Go to Login / Sign Up
           </Button>
         </CardContent>
       </Card>

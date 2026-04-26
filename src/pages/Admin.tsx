@@ -23,12 +23,44 @@ interface Category {
   words: string[];
 }
 
+const SAMPLE_HINTS: PuzzleHints = {
+  hint1: "Start by grouping obvious local places first, then verify what remains.",
+  hint2: "One set is about neighborhood naming patterns and another is about lost water bodies.",
+};
+
+const SAMPLE_FACT =
+  "Bengaluru once had an interconnected lake system with hundreds of tanks that helped recharge groundwater and reduce flooding.";
+
+const SAMPLE_CATEGORIES: Category[] = [
+  {
+    name: "Things You Find In A Park",
+    difficulty: "easy",
+    words: ["GAZEBO", "PATHWAYS", "PLAYGROUND", "GYM"],
+  },
+  {
+    name: "Bangalore Bookstores",
+    difficulty: "medium",
+    words: ["BLOSSOMS", "SELECT", "SAPNA", "HIGGINBOTHAMS"],
+  },
+  {
+    name: "Lakes That Have Been Reclaimed",
+    difficulty: "hard",
+    words: ["SHOOLAY", "HENNUR", "DHARMAMBUDHI", "MILLER"],
+  },
+  {
+    name: "Areas In Bangalore Named After Politicians",
+    difficulty: "expert",
+    words: ["RT NAGAR", "SADASHIVNAGAR", "JP NAGAR", "MG ROAD"],
+  },
+];
+
 export default function Admin() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
   const [hints, setHints] = useState<PuzzleHints>({ hint1: "", hint2: "" });
   const [fact, setFact] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     // Check if user is authenticated and has admin role
@@ -128,114 +160,154 @@ export default function Admin() {
 
     setCategories(normalizedCategories);
   };
-  const saveData = async () => {
+  const saveCategoriesWithSchema = async (
+    categoriesToSave: Category[],
+    normalizedHints: PuzzleHints,
+    normalizedFact: string,
+    includeHints: boolean,
+    includeFact: boolean
+  ) => {
+    const nextCategories: Category[] = [...categoriesToSave];
+
+    for (let index = 0; index < categoriesToSave.length; index += 1) {
+      const cat = categoriesToSave[index];
+      const payload: Record<string, unknown> = {
+        name: cat.name,
+        difficulty: cat.difficulty,
+        words: cat.words,
+        display_order: index + 1,
+      };
+
+      if (includeHints) {
+        payload.hint_1 = normalizedHints.hint1;
+        payload.hint_2 = normalizedHints.hint2;
+      }
+      if (includeFact) {
+        payload.puzzle_fact = normalizedFact;
+      }
+
+      if (cat.id) {
+        const { error } = await supabase.from("game_categories").update(payload).eq("id", cat.id);
+        if (error) return { error, nextCategories };
+      } else {
+        const { data, error } = await supabase
+          .from("game_categories")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) return { error, nextCategories };
+        if (data?.id) {
+          nextCategories[index] = { ...cat, id: data.id };
+        }
+      }
+    }
+
+    return { error: null, nextCategories };
+  };
+
+  const persistData = async (
+    categoriesToSave: Category[],
+    hintsToSave: PuzzleHints,
+    factToSave: string
+  ) => {
     const normalizedHints = {
-      hint1: hints.hint1.trim(),
-      hint2: hints.hint2.trim(),
+      hint1: hintsToSave.hint1.trim(),
+      hint2: hintsToSave.hint2.trim(),
     };
-    const normalizedFact = fact.trim();
+    const normalizedFact = factToSave.trim();
     writeHintsToStorage(normalizedHints);
     writeFactToStorage(normalizedFact);
 
-    const saveWithHintsAndFact = async () => {
-      for (let index = 0; index < categories.length; index += 1) {
-        const cat = categories[index];
-        const payload = {
-          name: cat.name,
-          difficulty: cat.difficulty,
-          words: cat.words,
-          display_order: index + 1,
-          hint_1: normalizedHints.hint1,
-          hint_2: normalizedHints.hint2,
-          puzzle_fact: normalizedFact,
-        };
-
-        if (cat.id) {
-          const { error } = await supabase.from("game_categories").update(payload).eq("id", cat.id);
-          if (error) return error;
-        } else {
-          const { error } = await supabase.from("game_categories").insert(payload);
-          if (error) return error;
-        }
-      }
-
-      return null;
-    };
-
-    const saveWithHintsOnly = async () => {
-      for (let index = 0; index < categories.length; index += 1) {
-        const cat = categories[index];
-        const payload = {
-          name: cat.name,
-          difficulty: cat.difficulty,
-          words: cat.words,
-          display_order: index + 1,
-          hint_1: normalizedHints.hint1,
-          hint_2: normalizedHints.hint2,
-        };
-
-        if (cat.id) {
-          const { error } = await supabase.from("game_categories").update(payload).eq("id", cat.id);
-          if (error) return error;
-        } else {
-          const { error } = await supabase.from("game_categories").insert(payload);
-          if (error) return error;
-        }
-      }
-
-      return null;
-    };
-
-    const saveWithoutHints = async () => {
-      const nextCategories: Category[] = [...categories];
-      for (let index = 0; index < categories.length; index += 1) {
-        const cat = categories[index];
-        const payload = {
-          name: cat.name,
-          difficulty: cat.difficulty,
-          words: cat.words,
-          display_order: index + 1,
-        };
-
-        if (cat.id) {
-          const { error } = await supabase.from("game_categories").update(payload).eq("id", cat.id);
-          if (error) return { error, nextCategories };
-        } else {
-          const { data, error } = await supabase
-            .from("game_categories")
-            .insert(payload)
-            .select("id")
-            .single();
-          if (error) return { error, nextCategories };
-          if (data?.id) {
-            nextCategories[index] = { ...cat, id: data.id };
-          }
-        }
-      }
-
-      return { error: null, nextCategories };
-    };
-
-    const withHintsAndFactError = await saveWithHintsAndFact();
-    if (!withHintsAndFactError) {
-      toast.success("Game data saved!");
-      return;
+    const withHintsAndFact = await saveCategoriesWithSchema(
+      categoriesToSave,
+      normalizedHints,
+      normalizedFact,
+      true,
+      true
+    );
+    if (!withHintsAndFact.error) {
+      return {
+        nextCategories: withHintsAndFact.nextCategories,
+        message: "Game data saved!",
+      };
     }
 
-    const withHintsOnlyError = await saveWithHintsOnly();
-    if (!withHintsOnlyError) {
-      toast.success("Game data and hints saved. Fact is stored locally on this device until DB migration is applied.");
-      return;
+    const withHintsOnly = await saveCategoriesWithSchema(
+      categoriesToSave,
+      normalizedHints,
+      normalizedFact,
+      true,
+      false
+    );
+    if (!withHintsOnly.error) {
+      return {
+        nextCategories: withHintsOnly.nextCategories,
+        message: "Game data and hints saved. Fact is stored locally on this device until DB migration is applied.",
+      };
     }
 
-    const fallbackResult = await saveWithoutHints();
+    const fallbackResult = await saveCategoriesWithSchema(
+      categoriesToSave,
+      normalizedHints,
+      normalizedFact,
+      false,
+      false
+    );
     if (fallbackResult.error) {
-      toast.error(`Failed to save categories: ${fallbackResult.error.message}`);
+      return {
+        nextCategories: categoriesToSave,
+        error: fallbackResult.error,
+      };
+    }
+
+    return {
+      nextCategories: fallbackResult.nextCategories,
+      message: "Game data saved! Hints and fact are saved locally on this device until DB migration is applied.",
+    };
+  };
+
+  const saveData = async () => {
+    setSaving(true);
+    const result = await persistData(categories, hints, fact);
+    setSaving(false);
+
+    if (result.error) {
+      toast.error(`Failed to save categories: ${result.error.message}`);
       return;
     }
 
-    setCategories(fallbackResult.nextCategories);
-    toast.success("Game data saved! Hints and fact are saved locally on this device until DB migration is applied.");
+    setCategories(result.nextCategories);
+    await loadCategories();
+    toast.success(result.message);
+  };
+
+  const seedSampleData = async () => {
+    const shouldSeed = window.confirm(
+      "This will overwrite the current four categories, hints, and fact in the database. Continue?"
+    );
+    if (!shouldSeed) return;
+
+    setSaving(true);
+
+    const seededCategories = SAMPLE_CATEGORIES.map((category) => ({
+      ...category,
+      words: [...category.words],
+    }));
+    setCategories(seededCategories);
+    setHints(SAMPLE_HINTS);
+    setFact(SAMPLE_FACT);
+
+    const result = await persistData(seededCategories, SAMPLE_HINTS, SAMPLE_FACT);
+    setSaving(false);
+
+    if (result.error) {
+      toast.error(`Failed to seed sample data: ${result.error.message}`);
+      return;
+    }
+
+    setCategories(result.nextCategories);
+    await loadCategories();
+    toast.success("Sample data seeded successfully.");
   };
 
   const handleLogout = async () => {
@@ -244,7 +316,7 @@ export default function Admin() {
     navigate("/");
   };
 
-  const updateCategory = (index: number, field: keyof Category, value: any) => {
+  const updateCategory = <K extends keyof Category>(index: number, field: K, value: Category[K]) => {
     const updated = [...categories];
     updated[index] = { ...updated[index], [field]: value };
     setCategories(updated);
@@ -279,10 +351,13 @@ export default function Admin() {
             <Button variant="outline" onClick={() => navigate("/statistics")} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
               <span className="truncate">Statistics</span>
             </Button>
-            <Button onClick={saveData} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+            <Button variant="outline" onClick={seedSampleData} disabled={saving} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+              <span className="truncate">{saving ? "Working..." : "Seed Sample Data"}</span>
+            </Button>
+            <Button onClick={saveData} disabled={saving} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
               <span className="truncate">Save Changes</span>
             </Button>
-            <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+            <Button variant="destructive" onClick={handleLogout} disabled={saving} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
               <span className="truncate">Logout</span>
             </Button>
           </div>
@@ -350,7 +425,7 @@ export default function Admin() {
                       id={`difficulty-${categoryIndex}`}
                       value={category.difficulty}
                       onChange={(e) =>
-                        updateCategory(categoryIndex, "difficulty", e.target.value)
+                        updateCategory(categoryIndex, "difficulty", e.target.value as Category["difficulty"])
                       }
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
