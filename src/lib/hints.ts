@@ -4,8 +4,8 @@ export interface PuzzleHints {
 }
 
 export const DEFAULT_HINTS: PuzzleHints = {
-  hint1: "They signify the boundary of KempeGowda's Bengaluru.",
-  hint2: "Land Reclaimed.",
+  hint1: "Bodies of water.",
+  hint2: "Pigeons love to sit on them.",
 };
 
 export const HINTS_STORAGE_KEY = "unmap:puzzle-hints";

@@ -1,6 +1,6 @@
 export const FACT_STORAGE_KEY = "unmap:puzzle-fact";
 export const DEFAULT_PUZZLE_FACT =
-  "The Rain tree is originally from South America. It was first introduced to Sri Lanka by the British and then travelled to India.";
+  "Devajammani was successfully vaccinated for smallpox. The British used her as an example to encourage vaccination in the country. This event was painted by Thomas Hickey in a painting called 'Three Princesses'.";
 
 const normalizeValue = (value: unknown) =>
   typeof value === "string" ? value.trim() : "";
