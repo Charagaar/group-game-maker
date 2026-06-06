@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shuffle, Heart, CircleHelp } from "lucide-react";
+import { Shuffle, Heart, CircleHelp, ArrowRight, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fingerprintPuzzle, getClientId, startPlay, completePlay } from "@/lib/tracker";
 import { buildSolvedDifficultiesParam, type Difficulty } from "@/lib/share";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { DEFAULT_HINTS, extractHintsFromRows, resolveHints, writeHintsToStorage } from "@/lib/hints";
-import { extractFactFromRows, resolveFact } from "@/lib/fact";
+import { DEFAULT_HINTS, extractHintsFromRows, resolveHints, readHintsFromStorage, writeHintsToStorage } from "@/lib/hints";
+import { extractFactFromRows, readFactFromStorage, resolveFact, writeFactToStorage } from "@/lib/fact";
+import { EVENT_MODE, EVENT_GAME_CONFIGS } from "@/data/eventGameConfigs";
 
 interface Word {
   id: string;
@@ -133,12 +134,41 @@ export default function ConnectionsGame() {
   const [puzzleFact, setPuzzleFact] = useState("");
   const [isHintOpen, setIsHintOpen] = useState(false);
   const [currentHintIndex, setCurrentHintIndex] = useState<0 | 1>(0);
-  
+  const [activeGameId, setActiveGameId] = useState(1);
+
+  const getActiveEventConfig = (gameId: number = activeGameId) => {
+    if (EVENT_MODE) {
+      return EVENT_GAME_CONFIGS.find((game) => game.id === gameId) ?? EVENT_GAME_CONFIGS[0];
+    }
+    return undefined;
+  };
+
+  const getActiveEventCategories = (gameId: number = activeGameId): Category[] => {
+    if (EVENT_MODE) {
+      return getActiveEventConfig(gameId)?.categories ?? EVENT_GAME_CONFIGS[0].categories;
+    }
+    return FALLBACK_GAME_DATA;
+  };
+
+  const handleAnotherGame = () => {
+    if (EVENT_MODE) {
+      const nextGameId = activeGameId === 1 ? 2 : 1;
+      setActiveGameId(nextGameId);
+      void initializeGame(nextGameId);
+    }
+  };
+
+  const handleRefreshGame = () => {
+    void initializeGame(EVENT_MODE ? activeGameId : undefined);
+  };
+
   // Check if we're in "view answers" mode
   const viewMode = searchParams.get('view');
   const isViewingAnswers = viewMode === 'answers';
   const resultType = searchParams.get('result'); // 'won' or 'lost'
   const resultSessionId = searchParams.get("session");
+  const resultScore = searchParams.get("score");
+  const resultSolved = searchParams.get("solved");
   const resultFact = searchParams.get("fact");
 
   useEffect(() => {
@@ -180,25 +210,29 @@ export default function ConnectionsGame() {
     }
   }, [isViewingAnswers, resultType]);
 
-  const initializeGame = async () => {
+  const initializeGame = async (eventGameId?: number) => {
     let gameData: Category[] = FALLBACK_GAME_DATA;
-    
-    try {
-      const { data, error } = await supabase
-        .from("game_categories")
-        .select("*")
-        .order("display_order");
 
-      if (error) {
-        console.error("Failed to load game data from database:", error);
-      } else if (data && data.length > 0) {
-        // Normalize DB rows to one category per difficulty.
-        gameData = normalizeGameCategories(data as unknown as GameCategoryRow[]);
-      } else {
-        console.warn("No game data in database, using fallback");
+    if (EVENT_MODE) {
+      gameData = getActiveEventCategories(eventGameId);
+    } else {
+      try {
+        const { data, error } = await supabase
+          .from("game_categories")
+          .select("*")
+          .order("display_order");
+
+        if (error) {
+          console.error("Failed to load game data from database:", error);
+        } else if (data && data.length > 0) {
+          // Normalize DB rows to one category per difficulty.
+          gameData = normalizeGameCategories(data as unknown as GameCategoryRow[]);
+        } else {
+          console.warn("No game data in database, using fallback");
+        }
+      } catch (err) {
+        console.error("Error loading game data:", err);
       }
-    } catch (err) {
-      console.error("Error loading game data:", err);
     }
 
     // Compute a stable puzzle fingerprint for client-side tracking
@@ -247,13 +281,29 @@ export default function ConnectionsGame() {
     setCurrentHintIndex(0);
     setIsHintOpen(false);
 
-    const dbHints = extractHintsFromRows(gameData as unknown as Array<Record<string, unknown>>);
-    const finalHints = resolveHints(dbHints);
-    setHint1(finalHints.hint1);
-    setHint2(finalHints.hint2);
-    writeHintsToStorage(finalHints);
-    const dbFact = extractFactFromRows(gameData as unknown as Array<Record<string, unknown>>);
-    setPuzzleFact(resolveFact(dbFact));
+    if (EVENT_MODE) {
+      const eventConfig = getActiveEventConfig(eventGameId);
+      const finalHints = resolveHints({
+        hint1: eventConfig?.hints?.[0] ?? "",
+        hint2: eventConfig?.hints?.[1] ?? "",
+      });
+      setHint1(finalHints.hint1);
+      setHint2(finalHints.hint2);
+      writeHintsToStorage(finalHints);
+      const finalFact = resolveFact(eventConfig?.funFact);
+      setPuzzleFact(finalFact);
+      writeFactToStorage(finalFact);
+    } else {
+      const dbHints = extractHintsFromRows(gameData as unknown as Array<Record<string, unknown>>);
+      const finalHints = resolveHints(dbHints, readHintsFromStorage());
+      setHint1(finalHints.hint1);
+      setHint2(finalHints.hint2);
+      writeHintsToStorage(finalHints);
+      const dbFact = extractFactFromRows(gameData as unknown as Array<Record<string, unknown>>);
+      const finalFact = resolveFact(dbFact, readFactFromStorage());
+      setPuzzleFact(finalFact);
+      writeFactToStorage(finalFact);
+    }
   };
 
   const shuffleWords = (wordsToShuffle: Word[] = words) => {
@@ -433,6 +483,9 @@ export default function ConnectionsGame() {
   const remainingAttempts = Math.max(0, 4 - mistakes);
   const controlButtonPressClass =
     "border-[hsl(var(--primary)/0.25)] bg-white text-black hover:bg-white hover:text-black active:border-yellow-300 active:bg-white active:text-black active:shadow-[0_0_0_1px_rgba(250,204,21,0.55),0_0_16px_rgba(250,204,21,0.45)]";
+  const hintButtonClass =
+    "h-10 w-10 rounded-full border-2 border-yellow-300 bg-yellow-50 text-yellow-900 shadow-[0_0_0_1px_rgba(250,204,21,0.65),0_0_18px_rgba(250,204,21,0.55)] hover:bg-yellow-100 hover:text-yellow-950 hover:shadow-[0_0_0_2px_rgba(250,204,21,0.75),0_0_24px_rgba(250,204,21,0.65)] motion-safe:animate-pulse";
+  const cornerIconButtonClass = `h-9 w-9 rounded-full ${controlButtonPressClass}`;
   const currentHint = currentHintIndex === 0 ? hint1 : hint2;
 
   const toggleHint = () => {
@@ -441,18 +494,42 @@ export default function ConnectionsGame() {
 
   return (
     <div className="relative flex min-h-screen min-h-[100svh] flex-col items-center justify-center bg-background px-1 py-2 sm:px-4 sm:py-4">
-      {!isViewingAnswers && words.length > 0 && !gameWon && !gameLost && (
-        <div className="absolute right-2 top-2 z-30 sm:right-4 sm:top-4">
+      {!isViewingAnswers && words.length > 0 && (
+        <div className="absolute right-2 top-2 z-30 flex items-center gap-1.5 sm:right-4 sm:top-4">
+          {!gameWon && !gameLost && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Open hints"
+              onClick={() => setIsHintOpen(true)}
+              className={hintButtonClass}
+            >
+              <CircleHelp className="h-5 w-5" />
+            </Button>
+          )}
           <Button
             type="button"
             variant="outline"
             size="icon"
-            aria-label="Open hints"
-            onClick={() => setIsHintOpen(true)}
-            className="h-9 w-9 rounded-full"
+            aria-label="Refresh game"
+            onClick={handleRefreshGame}
+            className={cornerIconButtonClass}
           >
-            <CircleHelp className="h-4 w-4" />
+            <RotateCw className="h-4 w-4" />
           </Button>
+          {EVENT_MODE && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Another game"
+              onClick={handleAnotherGame}
+              className={cornerIconButtonClass}
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       )}
 
@@ -590,6 +667,8 @@ export default function ConnectionsGame() {
               onClick={() => {
                 const resultParams = new URLSearchParams();
                 if (resultSessionId) resultParams.set("session", resultSessionId);
+                if (resultScore) resultParams.set("score", resultScore);
+                if (resultSolved) resultParams.set("solved", resultSolved);
                 if (resultFact) resultParams.set("fact", resultFact);
                 navigate(resultType === "won" ? `/game-won?${resultParams.toString()}` : `/game-over?${resultParams.toString()}`);
               }}

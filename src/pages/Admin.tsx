@@ -23,37 +23,6 @@ interface Category {
   words: string[];
 }
 
-const SAMPLE_HINTS: PuzzleHints = {
-  hint1: "Start by grouping obvious local places first, then verify what remains.",
-  hint2: "One set is about neighborhood naming patterns and another is about lost water bodies.",
-};
-
-const SAMPLE_FACT =
-  "Bengaluru once had an interconnected lake system with hundreds of tanks that helped recharge groundwater and reduce flooding.";
-
-const SAMPLE_CATEGORIES: Category[] = [
-  {
-    name: "Things You Find In A Park",
-    difficulty: "easy",
-    words: ["GAZEBO", "PATHWAYS", "PLAYGROUND", "GYM"],
-  },
-  {
-    name: "Bangalore Bookstores",
-    difficulty: "medium",
-    words: ["BLOSSOMS", "SELECT", "SAPNA", "HIGGINBOTHAMS"],
-  },
-  {
-    name: "Lakes That Have Been Reclaimed",
-    difficulty: "hard",
-    words: ["SHOOLAY", "HENNUR", "DHARMAMBUDHI", "MILLER"],
-  },
-  {
-    name: "Areas In Bangalore Named After Politicians",
-    difficulty: "expert",
-    words: ["RT NAGAR", "SADASHIVNAGAR", "JP NAGAR", "MG ROAD"],
-  },
-];
-
 export default function Admin() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -281,35 +250,6 @@ export default function Admin() {
     toast.success(result.message);
   };
 
-  const seedSampleData = async () => {
-    const shouldSeed = window.confirm(
-      "This will overwrite the current four categories, hints, and fact in the database. Continue?"
-    );
-    if (!shouldSeed) return;
-
-    setSaving(true);
-
-    const seededCategories = SAMPLE_CATEGORIES.map((category) => ({
-      ...category,
-      words: [...category.words],
-    }));
-    setCategories(seededCategories);
-    setHints(SAMPLE_HINTS);
-    setFact(SAMPLE_FACT);
-
-    const result = await persistData(seededCategories, SAMPLE_HINTS, SAMPLE_FACT);
-    setSaving(false);
-
-    if (result.error) {
-      toast.error(`Failed to seed sample data: ${result.error.message}`);
-      return;
-    }
-
-    setCategories(result.nextCategories);
-    await loadCategories();
-    toast.success("Sample data seeded successfully.");
-  };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Logged out successfully");
@@ -350,9 +290,6 @@ export default function Admin() {
             </Button>
             <Button variant="outline" onClick={() => navigate("/statistics")} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
               <span className="truncate">Statistics</span>
-            </Button>
-            <Button variant="outline" onClick={seedSampleData} disabled={saving} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
-              <span className="truncate">{saving ? "Working..." : "Seed Sample Data"}</span>
             </Button>
             <Button onClick={saveData} disabled={saving} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
               <span className="truncate">Save Changes</span>

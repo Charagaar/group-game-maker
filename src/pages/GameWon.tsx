@@ -11,8 +11,9 @@ import { Share2, Instagram, Copy, Globe } from "lucide-react";
 import { buildAchievementMessage, buildWhatsAppShareUrl, buildWhatsAppWebShareUrl, parseSolvedDifficultiesParam } from "@/lib/share";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { extractFactFromRows, resolveFact, writeFactToStorage } from "@/lib/fact";
+import { extractFactFromRows, readFactFromStorage, resolveFact, writeFactToStorage } from "@/lib/fact";
 import { supabase } from "@/integrations/supabase/client";
+import { EVENT_MODE } from "@/data/eventGameConfigs";
 
 const ABOUT_US_URL = "https://www.un-mapped.com";
 const resultButtonClass =
@@ -24,12 +25,11 @@ export default function GameWon() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session');
   const rawScore = searchParams.get("score");
+  const rawSolved = searchParams.get("solved");
   const parsedScore = rawScore ? Number(rawScore) : NaN;
   const score = Number.isFinite(parsedScore) ? parsedScore : 4;
-  const solvedDifficulties = parseSolvedDifficultiesParam(searchParams.get("solved"));
-  const [puzzleFact, setPuzzleFact] = useState(() =>
-    resolveFact(searchParams.get("fact"))
-  );
+  const solvedDifficulties = parseSolvedDifficultiesParam(rawSolved);
+  const [puzzleFact, setPuzzleFact] = useState(() => searchParams.get("fact")?.trim() ?? "");
   const shareMessage = buildAchievementMessage(
     score,
     solvedDifficulties.length ? solvedDifficulties : ["easy", "medium", "hard", "expert"]
@@ -48,16 +48,21 @@ export default function GameWon() {
       if (error || !data || !isActive) return;
 
       const dbFact = extractFactFromRows(data as unknown as Array<Record<string, unknown>>);
-      if (!dbFact) return;
-
-      writeFactToStorage(dbFact);
-      if (isActive) setPuzzleFact(dbFact);
+      const finalFact = resolveFact(dbFact, readFactFromStorage());
+      writeFactToStorage(finalFact);
+      if (isActive) setPuzzleFact(finalFact);
     };
 
     loadFact();
     return () => {
       isActive = false;
     };
+  }, [puzzleFact]);
+
+  useEffect(() => {
+    if (puzzleFact) return;
+    const storedFact = readFactFromStorage();
+    if (storedFact) setPuzzleFact(storedFact);
   }, [puzzleFact]);
 
   const copyShareMessage = async () => {
@@ -102,6 +107,8 @@ export default function GameWon() {
                 params.set("view", "answers");
                 params.set("result", "won");
                 if (sessionId) params.set("session", sessionId);
+                if (rawScore) params.set("score", rawScore);
+                if (rawSolved) params.set("solved", rawSolved);
                 if (puzzleFact) params.set("fact", puzzleFact);
                 navigate(`/?${params.toString()}`);
               }} 
@@ -138,6 +145,11 @@ export default function GameWon() {
                 <span className="truncate">Go back to website</span>
               </a>
             </Button>
+            {EVENT_MODE && (
+              <Button onClick={() => navigate("/")} variant="secondary" className={resultButtonClass}>
+                <span className="truncate">Play Another Game →</span>
+              </Button>
+            )}
           </div>
           {puzzleFact ? (
             <div className="mx-auto mt-6 w-full max-w-2xl rounded-lg border border-border/60 bg-muted/40 px-4 py-3 text-left">
