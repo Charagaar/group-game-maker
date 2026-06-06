@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -7,10 +7,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Share2, Instagram, Copy } from "lucide-react";
+import { Share2, Instagram, Copy, Globe } from "lucide-react";
 import { buildAchievementMessage, buildWhatsAppShareUrl, buildWhatsAppWebShareUrl, parseSolvedDifficultiesParam } from "@/lib/share";
 import { toast } from "sonner";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { extractFactFromRows, readFactFromStorage, resolveFact, writeFactToStorage } from "@/lib/fact";
+import { supabase } from "@/integrations/supabase/client";
+import { EVENT_MODE } from "@/data/eventGameConfigs";
 
 const ABOUT_US_URL = "https://www.un-mapped.com";
 const resultButtonClass =
@@ -22,13 +25,45 @@ export default function GameWon() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session');
   const rawScore = searchParams.get("score");
+  const rawSolved = searchParams.get("solved");
   const parsedScore = rawScore ? Number(rawScore) : NaN;
   const score = Number.isFinite(parsedScore) ? parsedScore : 4;
-  const solvedDifficulties = parseSolvedDifficultiesParam(searchParams.get("solved"));
+  const solvedDifficulties = parseSolvedDifficultiesParam(rawSolved);
+  const [puzzleFact, setPuzzleFact] = useState(() => searchParams.get("fact")?.trim() ?? "");
   const shareMessage = buildAchievementMessage(
     score,
     solvedDifficulties.length ? solvedDifficulties : ["easy", "medium", "hard", "expert"]
   );
+
+  useEffect(() => {
+    if (puzzleFact) return;
+
+    let isActive = true;
+    const loadFact = async () => {
+      const { data, error } = await supabase
+        .from("game_categories")
+        .select("puzzle_fact")
+        .order("display_order");
+
+      if (error || !data || !isActive) return;
+
+      const dbFact = extractFactFromRows(data as unknown as Array<Record<string, unknown>>);
+      const finalFact = resolveFact(dbFact, readFactFromStorage());
+      writeFactToStorage(finalFact);
+      if (isActive) setPuzzleFact(finalFact);
+    };
+
+    loadFact();
+    return () => {
+      isActive = false;
+    };
+  }, [puzzleFact]);
+
+  useEffect(() => {
+    if (puzzleFact) return;
+    const storedFact = readFactFromStorage();
+    if (storedFact) setPuzzleFact(storedFact);
+  }, [puzzleFact]);
 
   const copyShareMessage = async () => {
     try {
@@ -67,7 +102,16 @@ export default function GameWon() {
           </p>
           <div className="mx-auto flex w-full max-w-md flex-col gap-2">
             <Button 
-              onClick={() => navigate(`/?view=answers&result=won${sessionId ? `&session=${sessionId}` : ''}`)} 
+              onClick={() => {
+                const params = new URLSearchParams();
+                params.set("view", "answers");
+                params.set("result", "won");
+                if (sessionId) params.set("session", sessionId);
+                if (rawScore) params.set("score", rawScore);
+                if (rawSolved) params.set("solved", rawSolved);
+                if (puzzleFact) params.set("fact", puzzleFact);
+                navigate(`/?${params.toString()}`);
+              }} 
               variant="secondary" 
               className={resultButtonClass}
             >
@@ -89,7 +133,30 @@ export default function GameWon() {
                 <span className="truncate">About Us</span>
               </a>
             </Button>
+            <Button asChild variant="secondary" className={resultButtonClass}>
+              <a
+                href={ABOUT_US_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Go back to website"
+                className="flex items-center"
+              >
+                <Globe className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">Go back to website</span>
+              </a>
+            </Button>
+            {EVENT_MODE && (
+              <Button onClick={() => navigate("/")} variant="secondary" className={resultButtonClass}>
+                <span className="truncate">Play Another Game →</span>
+              </Button>
+            )}
           </div>
+          {puzzleFact ? (
+            <div className="mx-auto mt-6 w-full max-w-2xl rounded-lg border border-border/60 bg-muted/40 px-4 py-3 text-left">
+              <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Did you know?</p>
+              <p className="mt-1 text-sm sm:text-base leading-relaxed">{puzzleFact}</p>
+            </div>
+          ) : null}
         </div>
       </div>
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>

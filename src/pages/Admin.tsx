@@ -2,22 +2,34 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  extractHintsFromRows,
+  resolveHints,
+  type PuzzleHints,
+  readHintsFromStorage,
+  writeHintsToStorage,
+} from "@/lib/hints";
+import { extractFactFromRows, readFactFromStorage, resolveFact, writeFactToStorage } from "@/lib/fact";
 
 interface Category {
+  id?: string;
   name: string;
   difficulty: "easy" | "medium" | "hard" | "expert";
   words: string[];
 }
 
-
 export default function Admin() {
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [hints, setHints] = useState<PuzzleHints>({ hint1: "", hint2: "" });
+  const [fact, setFact] = useState("");
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     // Check if user is authenticated and has admin role
@@ -82,8 +94,15 @@ export default function Admin() {
           words: emptyWords,
         }))
       );
+      setHints(resolveHints(readHintsFromStorage()));
+      setFact(readFactFromStorage());
       return;
     }
+
+    const dbHints = extractHintsFromRows(data as unknown as Array<Record<string, unknown>>);
+    setHints(resolveHints(dbHints, readHintsFromStorage()));
+    const dbFact = extractFactFromRows(data as unknown as Array<Record<string, unknown>>);
+    setFact(resolveFact(dbFact, readFactFromStorage()));
 
     // Normalize to exactly one category per difficulty in a fixed order
     const normalizedCategories: Category[] = difficulties.map((difficulty) => {
@@ -94,6 +113,7 @@ export default function Admin() {
       if (candidates.length > 0) {
         const picked = candidates[0];
         return {
+          id: picked.id,
           name: picked.name,
           difficulty: picked.difficulty as Category["difficulty"],
           words: Array.isArray(picked.words) && picked.words.length > 0 ? picked.words : emptyWords,
@@ -109,34 +129,125 @@ export default function Admin() {
 
     setCategories(normalizedCategories);
   };
+  const saveCategoriesWithSchema = async (
+    categoriesToSave: Category[],
+    normalizedHints: PuzzleHints,
+    normalizedFact: string,
+    includeHints: boolean,
+    includeFact: boolean
+  ) => {
+    const nextCategories: Category[] = [...categoriesToSave];
+
+    for (let index = 0; index < categoriesToSave.length; index += 1) {
+      const cat = categoriesToSave[index];
+      const payload: Record<string, unknown> = {
+        name: cat.name,
+        difficulty: cat.difficulty,
+        words: cat.words,
+        display_order: index + 1,
+      };
+
+      if (includeHints) {
+        payload.hint_1 = normalizedHints.hint1;
+        payload.hint_2 = normalizedHints.hint2;
+      }
+      if (includeFact) {
+        payload.puzzle_fact = normalizedFact;
+      }
+
+      if (cat.id) {
+        const { error } = await supabase.from("game_categories").update(payload).eq("id", cat.id);
+        if (error) return { error, nextCategories };
+      } else {
+        const { data, error } = await supabase
+          .from("game_categories")
+          .insert(payload)
+          .select("id")
+          .single();
+        if (error) return { error, nextCategories };
+        if (data?.id) {
+          nextCategories[index] = { ...cat, id: data.id };
+        }
+      }
+    }
+
+    return { error: null, nextCategories };
+  };
+
+  const persistData = async (
+    categoriesToSave: Category[],
+    hintsToSave: PuzzleHints,
+    factToSave: string
+  ) => {
+    const normalizedHints = {
+      hint1: hintsToSave.hint1.trim(),
+      hint2: hintsToSave.hint2.trim(),
+    };
+    const normalizedFact = factToSave.trim();
+    writeHintsToStorage(normalizedHints);
+    writeFactToStorage(normalizedFact);
+
+    const withHintsAndFact = await saveCategoriesWithSchema(
+      categoriesToSave,
+      normalizedHints,
+      normalizedFact,
+      true,
+      true
+    );
+    if (!withHintsAndFact.error) {
+      return {
+        nextCategories: withHintsAndFact.nextCategories,
+        message: "Game data saved!",
+      };
+    }
+
+    const withHintsOnly = await saveCategoriesWithSchema(
+      categoriesToSave,
+      normalizedHints,
+      normalizedFact,
+      true,
+      false
+    );
+    if (!withHintsOnly.error) {
+      return {
+        nextCategories: withHintsOnly.nextCategories,
+        message: "Game data and hints saved. Fact is stored locally on this device until DB migration is applied.",
+      };
+    }
+
+    const fallbackResult = await saveCategoriesWithSchema(
+      categoriesToSave,
+      normalizedHints,
+      normalizedFact,
+      false,
+      false
+    );
+    if (fallbackResult.error) {
+      return {
+        nextCategories: categoriesToSave,
+        error: fallbackResult.error,
+      };
+    }
+
+    return {
+      nextCategories: fallbackResult.nextCategories,
+      message: "Game data saved! Hints and fact are saved locally on this device until DB migration is applied.",
+    };
+  };
+
   const saveData = async () => {
-    const { error } = await supabase
-      .from("game_categories")
-      .delete()
-      .neq("id", "00000000-0000-0000-0000-000000000000");
+    setSaving(true);
+    const result = await persistData(categories, hints, fact);
+    setSaving(false);
 
-    if (error) {
-      toast.error("Failed to clear old data");
+    if (result.error) {
+      toast.error(`Failed to save categories: ${result.error.message}`);
       return;
     }
 
-    const dataToInsert = categories.map((cat, index) => ({
-      name: cat.name,
-      difficulty: cat.difficulty,
-      words: cat.words,
-      display_order: index + 1
-    }));
-
-    const { error: insertError } = await supabase
-      .from("game_categories")
-      .insert(dataToInsert);
-
-    if (insertError) {
-      toast.error("Failed to save categories");
-      return;
-    }
-
-    toast.success("Game data saved!");
+    setCategories(result.nextCategories);
+    await loadCategories();
+    toast.success(result.message);
   };
 
   const handleLogout = async () => {
@@ -145,7 +256,7 @@ export default function Admin() {
     navigate("/");
   };
 
-  const updateCategory = (index: number, field: keyof Category, value: any) => {
+  const updateCategory = <K extends keyof Category>(index: number, field: K, value: Category[K]) => {
     const updated = [...categories];
     updated[index] = { ...updated[index], [field]: value };
     setCategories(updated);
@@ -180,16 +291,52 @@ export default function Admin() {
             <Button variant="outline" onClick={() => navigate("/statistics")} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
               <span className="truncate">Statistics</span>
             </Button>
-            <Button onClick={saveData} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+            <Button onClick={saveData} disabled={saving} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
               <span className="truncate">Save Changes</span>
             </Button>
-            <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
+            <Button variant="destructive" onClick={handleLogout} disabled={saving} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">
               <span className="truncate">Logout</span>
             </Button>
           </div>
         </div>
 
         <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Puzzle Hints</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="hint-1">Hint 1</Label>
+                <Textarea
+                  id="hint-1"
+                  value={hints.hint1}
+                  onChange={(e) => setHints((prev) => ({ ...prev, hint1: e.target.value }))}
+                  className="mt-2 min-h-[72px]"
+                />
+              </div>
+              <div>
+                <Label htmlFor="hint-2">Hint 2</Label>
+                <Textarea
+                  id="hint-2"
+                  value={hints.hint2}
+                  onChange={(e) => setHints((prev) => ({ ...prev, hint2: e.target.value }))}
+                  className="mt-2 min-h-[72px]"
+                />
+              </div>
+              <div>
+                <Label htmlFor="puzzle-fact">Post-Game Fact</Label>
+                <Textarea
+                  id="puzzle-fact"
+                  value={fact}
+                  onChange={(e) => setFact(e.target.value)}
+                  placeholder="One educational fact shown after win/loss"
+                  className="mt-2 min-h-[72px]"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
           {categories.map((category, categoryIndex) => (
             <Card key={categoryIndex}>
               <CardHeader>
@@ -215,7 +362,7 @@ export default function Admin() {
                       id={`difficulty-${categoryIndex}`}
                       value={category.difficulty}
                       onChange={(e) =>
-                        updateCategory(categoryIndex, "difficulty", e.target.value)
+                        updateCategory(categoryIndex, "difficulty", e.target.value as Category["difficulty"])
                       }
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >

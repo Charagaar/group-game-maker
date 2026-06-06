@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Shuffle, Heart } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Shuffle, Heart, CircleHelp, ArrowRight, RotateCw } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { fingerprintPuzzle, getClientId, startPlay, completePlay } from "@/lib/tracker";
 import { buildSolvedDifficultiesParam, type Difficulty } from "@/lib/share";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { DEFAULT_HINTS, extractHintsFromRows, resolveHints, readHintsFromStorage, writeHintsToStorage } from "@/lib/hints";
+import { extractFactFromRows, readFactFromStorage, resolveFact, writeFactToStorage } from "@/lib/fact";
+import { EVENT_MODE, EVENT_GAME_CONFIGS } from "@/data/eventGameConfigs";
 
 interface Word {
   id: string;
@@ -18,7 +22,20 @@ interface Category {
   name: string;
   difficulty: "easy" | "medium" | "hard" | "expert";
   words: string[];
+  hint1?: string;
+  hint2?: string;
+  puzzleFact?: string;
 }
+
+type GameCategoryRow = {
+  name: string;
+  difficulty: "easy" | "medium" | "hard" | "expert";
+  words: string[];
+  display_order: number | null;
+  hint_1?: string | null;
+  hint_2?: string | null;
+  puzzle_fact?: string | null;
+};
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION ?? "unknown";
 
@@ -60,6 +77,39 @@ const difficultyOrder: Record<"easy" | "medium" | "hard" | "expert", number> = {
   expert: 4,
 };
 
+const DIFFICULTIES: Array<"easy" | "medium" | "hard" | "expert"> = ["easy", "medium", "hard", "expert"];
+
+const normalizeGameCategories = (rows: GameCategoryRow[]): Category[] => {
+  if (!rows.length) return FALLBACK_GAME_DATA;
+
+  const sorted = [...rows].sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0));
+
+  // Keep at most one row per difficulty to avoid duplicate board tiles from stale DB rows.
+  const firstRowByDifficulty = new Map<"easy" | "medium" | "hard" | "expert", GameCategoryRow>();
+  sorted.forEach((row) => {
+    if (!DIFFICULTIES.includes(row.difficulty)) return;
+    if (!firstRowByDifficulty.has(row.difficulty)) {
+      firstRowByDifficulty.set(row.difficulty, row);
+    }
+  });
+
+  return DIFFICULTIES.map((difficulty) => {
+    const picked = firstRowByDifficulty.get(difficulty);
+    if (!picked) {
+      return FALLBACK_GAME_DATA.find((cat) => cat.difficulty === difficulty)!;
+    }
+
+    return {
+      name: picked.name,
+      difficulty: picked.difficulty,
+      words: Array.isArray(picked.words) ? picked.words : [],
+      hint1: picked.hint_1?.trim() || undefined,
+      hint2: picked.hint_2?.trim() || undefined,
+      puzzleFact: picked.puzzle_fact?.trim() || undefined,
+    };
+  });
+};
+
 const getClientIdSafe = () => {
   try {
     return getClientId();
@@ -79,11 +129,47 @@ export default function ConnectionsGame() {
   const [gameLost, setGameLost] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [puzzleId, setPuzzleId] = useState<string | null>(null);
-  
+  const [hint1, setHint1] = useState(DEFAULT_HINTS.hint1);
+  const [hint2, setHint2] = useState(DEFAULT_HINTS.hint2);
+  const [puzzleFact, setPuzzleFact] = useState("");
+  const [isHintOpen, setIsHintOpen] = useState(false);
+  const [currentHintIndex, setCurrentHintIndex] = useState<0 | 1>(0);
+  const [activeGameId, setActiveGameId] = useState(1);
+
+  const getActiveEventConfig = (gameId: number = activeGameId) => {
+    if (EVENT_MODE) {
+      return EVENT_GAME_CONFIGS.find((game) => game.id === gameId) ?? EVENT_GAME_CONFIGS[0];
+    }
+    return undefined;
+  };
+
+  const getActiveEventCategories = (gameId: number = activeGameId): Category[] => {
+    if (EVENT_MODE) {
+      return getActiveEventConfig(gameId)?.categories ?? EVENT_GAME_CONFIGS[0].categories;
+    }
+    return FALLBACK_GAME_DATA;
+  };
+
+  const handleAnotherGame = () => {
+    if (EVENT_MODE) {
+      const nextGameId = activeGameId === 1 ? 2 : 1;
+      setActiveGameId(nextGameId);
+      void initializeGame(nextGameId);
+    }
+  };
+
+  const handleRefreshGame = () => {
+    void initializeGame(EVENT_MODE ? activeGameId : undefined);
+  };
+
   // Check if we're in "view answers" mode
   const viewMode = searchParams.get('view');
   const isViewingAnswers = viewMode === 'answers';
   const resultType = searchParams.get('result'); // 'won' or 'lost'
+  const resultSessionId = searchParams.get("session");
+  const resultScore = searchParams.get("score");
+  const resultSolved = searchParams.get("solved");
+  const resultFact = searchParams.get("fact");
 
   useEffect(() => {
     if (isViewingAnswers) return; // Skip game init when viewing answers
@@ -105,11 +191,7 @@ export default function ConnectionsGame() {
           if (error) {
             console.error("Failed to load game data:", error);
           } else if (data && data.length > 0) {
-            gameData = data.map(cat => ({
-              name: cat.name,
-              difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
-              words: cat.words,
-            }));
+            gameData = normalizeGameCategories(data as unknown as GameCategoryRow[]);
           }
         } catch (err) {
           console.error("Error loading game data:", err);
@@ -128,29 +210,29 @@ export default function ConnectionsGame() {
     }
   }, [isViewingAnswers, resultType]);
 
-  const initializeGame = async () => {
+  const initializeGame = async (eventGameId?: number) => {
     let gameData: Category[] = FALLBACK_GAME_DATA;
-    
-    try {
-      const { data, error } = await supabase
-        .from("game_categories")
-        .select("*")
-        .order("display_order");
 
-      if (error) {
-        console.error("Failed to load game data from database:", error);
-      } else if (data && data.length > 0) {
-        // Convert database format to Category format
-        gameData = data.map(cat => ({
-          name: cat.name,
-          difficulty: cat.difficulty as "easy" | "medium" | "hard" | "expert",
-          words: cat.words,
-        }));
-      } else {
-        console.warn("No game data in database, using fallback");
+    if (EVENT_MODE) {
+      gameData = getActiveEventCategories(eventGameId);
+    } else {
+      try {
+        const { data, error } = await supabase
+          .from("game_categories")
+          .select("*")
+          .order("display_order");
+
+        if (error) {
+          console.error("Failed to load game data from database:", error);
+        } else if (data && data.length > 0) {
+          // Normalize DB rows to one category per difficulty.
+          gameData = normalizeGameCategories(data as unknown as GameCategoryRow[]);
+        } else {
+          console.warn("No game data in database, using fallback");
+        }
+      } catch (err) {
+        console.error("Error loading game data:", err);
       }
-    } catch (err) {
-      console.error("Error loading game data:", err);
     }
 
     // Compute a stable puzzle fingerprint for client-side tracking
@@ -161,10 +243,10 @@ export default function ConnectionsGame() {
     setPuzzleId(computedPuzzleId);
 
     const allWords: Word[] = [];
-    gameData.forEach((category) => {
-      category.words.forEach((word: string) => {
+    gameData.forEach((category, categoryIndex) => {
+      category.words.forEach((word: string, wordIndex: number) => {
         allWords.push({
-          id: `${category.name}-${word}`,
+          id: `${category.difficulty}-${categoryIndex}-${wordIndex}`,
           text: word,
           category: category.name,
           difficulty: category.difficulty as "easy" | "medium" | "hard" | "expert",
@@ -196,6 +278,32 @@ export default function ConnectionsGame() {
     setMistakes(0);
     setGameWon(false);
     setGameLost(false);
+    setCurrentHintIndex(0);
+    setIsHintOpen(false);
+
+    if (EVENT_MODE) {
+      const eventConfig = getActiveEventConfig(eventGameId);
+      const finalHints = resolveHints({
+        hint1: eventConfig?.hints?.[0] ?? "",
+        hint2: eventConfig?.hints?.[1] ?? "",
+      });
+      setHint1(finalHints.hint1);
+      setHint2(finalHints.hint2);
+      writeHintsToStorage(finalHints);
+      const finalFact = resolveFact(eventConfig?.funFact);
+      setPuzzleFact(finalFact);
+      writeFactToStorage(finalFact);
+    } else {
+      const dbHints = extractHintsFromRows(gameData as unknown as Array<Record<string, unknown>>);
+      const finalHints = resolveHints(dbHints, readHintsFromStorage());
+      setHint1(finalHints.hint1);
+      setHint2(finalHints.hint2);
+      writeHintsToStorage(finalHints);
+      const dbFact = extractFactFromRows(gameData as unknown as Array<Record<string, unknown>>);
+      const finalFact = resolveFact(dbFact, readFactFromStorage());
+      setPuzzleFact(finalFact);
+      writeFactToStorage(finalFact);
+    }
   };
 
   const shuffleWords = (wordsToShuffle: Word[] = words) => {
@@ -307,7 +415,12 @@ export default function ConnectionsGame() {
           const solvedParam = buildSolvedDifficultiesParam(
             nextSolvedCategories.map((category) => category.difficulty as Difficulty)
           );
-          navigate(`/game-won?session=${sessionId}&score=4&solved=${solvedParam}`);
+          const winParams = new URLSearchParams();
+          if (sessionId) winParams.set("session", sessionId);
+          winParams.set("score", "4");
+          winParams.set("solved", solvedParam);
+          if (puzzleFact) winParams.set("fact", puzzleFact);
+          navigate(`/game-won?${winParams.toString()}`);
         }
       }
     } else {
@@ -357,15 +470,69 @@ export default function ConnectionsGame() {
         const solvedParam = buildSolvedDifficultiesParam(
           solvedCategories.map((category) => category.difficulty as Difficulty)
         );
-        navigate(`/game-over?session=${sessionId}&score=${solvedCategories.length}&solved=${solvedParam}`);
+        const lossParams = new URLSearchParams();
+        if (sessionId) lossParams.set("session", sessionId);
+        lossParams.set("score", String(solvedCategories.length));
+        lossParams.set("solved", solvedParam);
+        if (puzzleFact) lossParams.set("fact", puzzleFact);
+        navigate(`/game-over?${lossParams.toString()}`);
       }
     }
   };
 
   const remainingAttempts = Math.max(0, 4 - mistakes);
+  const controlButtonPressClass =
+    "border-[hsl(var(--primary)/0.25)] bg-white text-black hover:bg-white hover:text-black active:border-yellow-300 active:bg-white active:text-black active:shadow-[0_0_0_1px_rgba(250,204,21,0.55),0_0_16px_rgba(250,204,21,0.45)]";
+  const hintButtonClass =
+    "h-10 w-10 rounded-full border-2 border-yellow-300 bg-yellow-50 text-yellow-900 shadow-[0_0_0_1px_rgba(250,204,21,0.65),0_0_18px_rgba(250,204,21,0.55)] hover:bg-yellow-100 hover:text-yellow-950 hover:shadow-[0_0_0_2px_rgba(250,204,21,0.75),0_0_24px_rgba(250,204,21,0.65)] motion-safe:animate-pulse";
+  const cornerIconButtonClass = `h-9 w-9 rounded-full ${controlButtonPressClass}`;
+  const currentHint = currentHintIndex === 0 ? hint1 : hint2;
+
+  const toggleHint = () => {
+    setCurrentHintIndex((prev) => (prev === 0 ? 1 : 0));
+  };
 
   return (
-    <div className="flex min-h-screen min-h-[100svh] flex-col items-center justify-center bg-background px-1 py-2 sm:px-4 sm:py-4">
+    <div className="relative flex min-h-screen min-h-[100svh] flex-col items-center justify-center bg-background px-1 py-2 sm:px-4 sm:py-4">
+      {!isViewingAnswers && words.length > 0 && (
+        <div className="absolute right-2 top-2 z-30 flex items-center gap-1.5 sm:right-4 sm:top-4">
+          {!gameWon && !gameLost && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Open hints"
+              onClick={() => setIsHintOpen(true)}
+              className={hintButtonClass}
+            >
+              <CircleHelp className="h-5 w-5" />
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            aria-label="Refresh game"
+            onClick={handleRefreshGame}
+            className={cornerIconButtonClass}
+          >
+            <RotateCw className="h-4 w-4" />
+          </Button>
+          {EVENT_MODE && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label="Another game"
+              onClick={handleAnotherGame}
+              className={cornerIconButtonClass}
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="mx-auto w-full max-w-2xl space-y-2 sm:space-y-6">
         {/* Header */}
         <div className="text-center space-y-0.5 sm:space-y-2">
@@ -467,15 +634,16 @@ export default function ConnectionsGame() {
                   variant="outline"
                   onClick={() => shuffleWords()}
                   size="sm"
-                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3"
+                  className={`min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3 ${controlButtonPressClass}`}
                 >
                   <Shuffle className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 shrink-0" />
                   <span className="truncate">Shuffle</span>
                 </Button>
                 <Button
+                  variant="outline"
                   onClick={submitGuess}
                   size="sm"
-                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3 enabled:border-yellow-300/70 enabled:hover:bg-[hsl(50_100%_97%)] enabled:hover:border-yellow-300 enabled:focus-visible:ring-yellow-300 enabled:active:bg-[hsl(50_100%_92%)] enabled:active:shadow-[0_0_0_1px_rgba(250,204,21,0.45),0_0_18px_rgba(250,204,21,0.45)]"
+                  className={`min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-3 ${controlButtonPressClass}`}
                 >
                   <span className="truncate">Submit</span>
                 </Button>
@@ -483,7 +651,7 @@ export default function ConnectionsGame() {
                   variant="outline"
                   onClick={deselectAll}
                   size="sm"
-                  className="min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-2.5"
+                  className={`min-w-0 flex-1 sm:flex-none text-[10px] sm:text-sm h-8 sm:h-9 px-2 sm:px-2.5 ${controlButtonPressClass}`}
                 >
                   <span className="truncate">Deselect All</span>
                 </Button>
@@ -496,7 +664,14 @@ export default function ConnectionsGame() {
         {isViewingAnswers && (
           <div className="flex justify-center">
             <Button
-              onClick={() => navigate(resultType === 'won' ? `/game-won?session=${sessionId}` : `/game-over?session=${sessionId}`)}
+              onClick={() => {
+                const resultParams = new URLSearchParams();
+                if (resultSessionId) resultParams.set("session", resultSessionId);
+                if (resultScore) resultParams.set("score", resultScore);
+                if (resultSolved) resultParams.set("solved", resultSolved);
+                if (resultFact) resultParams.set("fact", resultFact);
+                navigate(resultType === "won" ? `/game-won?${resultParams.toString()}` : `/game-over?${resultParams.toString()}`);
+              }}
               variant="outline"
               size="lg"
               className="w-full sm:w-auto text-sm sm:text-base px-6 sm:px-8 hover:bg-category-easy hover:text-category-easy-foreground active:bg-category-easy active:text-category-easy-foreground"
@@ -506,6 +681,33 @@ export default function ConnectionsGame() {
           </div>
         )}
       </div>
+
+      <Dialog open={isHintOpen} onOpenChange={setIsHintOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Need a hint?</DialogTitle>
+            <DialogDescription>You have two hints.</DialogDescription>
+          </DialogHeader>
+
+          <div className="rounded-lg border border-white/40 bg-white/20 p-4 text-sm leading-relaxed text-white backdrop-blur-sm">
+            {currentHint}
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={toggleHint}
+              className={controlButtonPressClass}
+            >
+              Refresh Hint
+            </Button>
+            <Button type="button" onClick={() => setIsHintOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
